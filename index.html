@@ -743,6 +743,10 @@ const CONFIG = {
   // Limites POR equipamento. Um registo com três equipamentos permite três
   // vezes isto. Valores provisórios — ajustar com o uso real.
   MAX_FOTOS: 6,
+  // Ar Condicionado em garantia pode envolver várias situações a documentar
+  // no mesmo equipamento (fugas, componentes, instalação) — o limite normal
+  // ficava curto.
+  MAX_FOTOS_AC_GARANTIA: 20,
   MAX_ETIQUETAS: 2,
 
   // Quantos equipamentos se podem declarar num registo.
@@ -1117,9 +1121,14 @@ function colecao(eq, alvo) {
     return { itens: estado.fatura, max: CONFIG.MAX_FATURA, nome: "fotografias da fatura" };
   }
   const equipamento = estado.equipamentos[eq];
-  return alvo === "etiquetas"
-    ? { itens: equipamento.etiquetas, max: CONFIG.MAX_ETIQUETAS, nome: "etiquetas" }
-    : { itens: equipamento.fotos, max: CONFIG.MAX_FOTOS, nome: "fotografias" };
+  if (alvo === "etiquetas") {
+    return { itens: equipamento.etiquetas, max: CONFIG.MAX_ETIQUETAS, nome: "etiquetas" };
+  }
+  // Ar Condicionado em garantia pode levar várias situações no mesmo
+  // equipamento a documentar (fugas, componentes, instalação): o limite sobe.
+  const maxFotos = estado.servico === "ar_condicionado" && emGarantia()
+    ? CONFIG.MAX_FOTOS_AC_GARANTIA : CONFIG.MAX_FOTOS;
+  return { itens: equipamento.fotos, max: maxFotos, nome: "fotografias" };
 }
 
 // Fotografias prontas em cada parte do formulário que está à vista. Serve para

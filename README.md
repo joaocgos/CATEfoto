@@ -237,7 +237,8 @@ Tudo o que se mexe está no bloco `CONFIG`, no início do `<script>` do
 const CONFIG = {
   EMAIL_CAIXA: "recolhas",          // o endereço é montado em tempo de
   EMAIL_DOMINIO: "cate.com.pt",     // execução, ver nota abaixo
-  MAX_FOTOS: 6,         // fotografias POR equipamento
+  MAX_FOTOS: 6,               // fotografias POR equipamento
+  MAX_FOTOS_AC_GARANTIA: 20,  // idem, mas Ar Condicionado + em garantia
   MAX_ETIQUETAS: 2,     // etiquetas POR equipamento
   MAX_EQUIPAMENTOS: 20, // equipamentos declaráveis num registo
   AVISO_TAMANHO: 8 * 1024 * 1024,  // a partir daqui avisa que o registo é pesado
@@ -353,6 +354,11 @@ nome.
 **Limites por equipamento** — `MAX_FOTOS` e `MAX_ETIQUETAS` valem para *cada*
 equipamento, não para o registo todo: com três equipamentos declarados cabem
 três vezes isto. Os valores são provisórios; ajustar com o uso real.
+
+Em **Ar Condicionado + Em garantia** o limite de fotografias sobe para
+`MAX_FOTOS_AC_GARANTIA` (20): pode haver várias situações a documentar no
+mesmo equipamento — fugas, componentes, a instalação. Nos outros tipos, ou
+fora de garantia, mantém-se o `MAX_FOTOS` normal.
 
 **Caixas das lojas** — a lista `LOJAS`. A partilha dos telemóveis não deixa a
 app preencher o destinatário, por isso, com lojas configuradas, aparecem as
