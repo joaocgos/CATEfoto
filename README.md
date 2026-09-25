@@ -237,7 +237,7 @@ Tudo o que se mexe está no bloco `CONFIG`, no início do `<script>` do
 const CONFIG = {
   EMAIL_CAIXA: "recolhas",          // o endereço é montado em tempo de
   EMAIL_DOMINIO: "cate.com.pt",     // execução, ver nota abaixo
-  MAX_FOTOS: 6,               // fotografias POR equipamento
+  MAX_FOTOS: 10,               // fotografias POR equipamento
   MAX_FOTOS_AC_GARANTIA: 20,  // idem, mas Ar Condicionado + em garantia
   MAX_ETIQUETAS: 2,     // etiquetas POR equipamento
   MAX_EQUIPAMENTOS: 20, // equipamentos declaráveis num registo
