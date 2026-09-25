@@ -308,6 +308,13 @@
   }
   .thumb .del svg { width: 15px; height: 15px; stroke: #fff; }
 
+  .notas-fotos-pergunta { margin: 0; }
+  input.nota-campo {
+    grid-column: 1 / -1;
+    height: 40px; margin-top: -2px;
+    font-size: 13px;
+  }
+
   .thumb.loading { display: flex; align-items: center; justify-content: center; }
   .spinner {
     width: 22px; height: 22px; border-radius: 50%;
@@ -590,6 +597,15 @@
                 placeholder="Ex.: instalar exaustor novo na cozinha, com saída para o exterior."
                 aria-describedby="pretendido-err"></textarea>
       <p class="err" id="pretendido-err">Escreve o que o cliente pretende.</p>
+    </section>
+
+    <!-- Pergunta única: só com "sim" é que cada fotografia ganha um campo de
+         descrição. No caso comum fica sempre escondida. --------------------->
+    <section class="card">
+      <label class="dispensa-marca notas-fotos-pergunta">
+        <input type="checkbox" id="notas-fotos">
+        <span>Estas fotografias precisam de descrição?</span>
+      </label>
     </section>
 
     <!-- Folha de serviço: só quando há serviço associado --------------------->
@@ -917,6 +933,9 @@ const estado = {
   // Cada equipamento tem as suas etiquetas e as suas fotografias, para quem
   // recebe o email conseguir dizer que foto pertence a que máquina.
   equipamentos: [novoEquipamento()],
+  // Se as fotografias deste registo precisam de descrição. Enquanto não se
+  // marcar, nenhuma fotografia mostra o campo — é a pergunta que decide.
+  notasFotos: false,
   // A folha de serviço é do serviço, não de um equipamento — vive à parte.
   folha: [],
   // Fotografias do local, nos momentos sem equipamentos.
@@ -1235,13 +1254,18 @@ const kb = (bytes) => (bytes < 1024 * 1024
   ? Math.round(bytes / 1024) + " KB"
   : (bytes / 1024 / 1024).toFixed(1) + " MB");
 
+// Devolve um fragmento: a miniatura e, quando o registo pede descrições, um
+// campo de texto logo a seguir — os chamadores continuam a fazer só
+// thumbs.appendChild(cartaoFoto(...)), o fragmento entrega os dois.
 function cartaoFoto(item, eq, alvo) {
+  const frag = document.createDocumentFragment();
   const div = document.createElement("div");
   div.className = "thumb" + (item.estado === "a-processar" ? " loading" : "");
+  frag.appendChild(div);
 
   if (item.estado === "a-processar") {
     div.innerHTML = '<div class="spinner"></div>';
-    return div;
+    return frag;
   }
 
   const img = document.createElement("img");
@@ -1263,7 +1287,18 @@ function cartaoFoto(item, eq, alvo) {
   btn.addEventListener("click", () => remover(item.id, eq, alvo));
   div.appendChild(btn);
 
-  return div;
+  if (estado.notasFotos) {
+    const campo = document.createElement("input");
+    campo.type = "text";
+    campo.className = "nota-campo";
+    campo.placeholder = "Descrição desta fotografia (opcional)";
+    campo.maxLength = 140;
+    campo.value = item.nota || "";
+    campo.addEventListener("input", () => { item.nota = campo.value.trim(); });
+    frag.appendChild(campo);
+  }
+
+  return frag;
 }
 
 // Se este serviço já levou etiquetas noutro registo, diz-se — mas sem
@@ -1338,7 +1373,7 @@ function construirSubseccao(eq, alvo, titulo, ajuda, entradaCam, entradaGal) {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs grid";
+  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
   col.itens.forEach((f) => thumbs.appendChild(cartaoFoto(f, eq, alvo)));
 
   bloco.append(cab, dica, pickers, thumbs);
@@ -1387,7 +1422,7 @@ function desenharFolha() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs grid";
+  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
   estado.folha.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "folha")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -1507,7 +1542,7 @@ function desenharFatura() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs grid";
+  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
   estado.fatura.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "fatura")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -1555,7 +1590,7 @@ function desenharLocal() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs grid";
+  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
   estado.local.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "local")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -2005,6 +2040,9 @@ function construirFicheiros(num, momento, servico, garantia = null) {
   return ficheiros;
 }
 
+// " — <texto>" atrás da hora da fotografia, só quando há descrição escrita.
+const notaDe = (f) => (f.nota ? ` — "${f.nota}"` : "");
+
 function construirCorpo(num, momento, servico, garantia = null) {
   // Só segue o que está à vista: um nome escrito antes de tirar a dispensa
   // não pode viajar num registo que já tem número.
@@ -2091,17 +2129,17 @@ function construirCorpo(num, momento, servico, garantia = null) {
 
   (num ? estado.folha : []).forEach((f, i) => {
     if (f.capturada) {
-      capturas.push(`  · folha ${doisDig(i + 1)} — ${dataHora(f.capturada)}`);
+      capturas.push(`  · folha ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
     }
   });
   (garantia === "garantia" ? estado.fatura : []).forEach((f, i) => {
     if (f.capturada) {
-      capturas.push(`  · fatura ${doisDig(i + 1)} — ${dataHora(f.capturada)}`);
+      capturas.push(`  · fatura ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
     }
   });
   (mom.semEquipamentos ? estado.local : []).forEach((f, i) => {
     if (f.capturada) {
-      capturas.push(`  · ${doisDig(i + 1)} — ${dataHora(f.capturada)}`);
+      capturas.push(`  · ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
     }
   });
 
@@ -2109,12 +2147,12 @@ function construirCorpo(num, momento, servico, garantia = null) {
     const linhas_eq = [];
     equipamento.etiquetas.forEach((f, i) => {
       if (f.capturada) {
-        linhas_eq.push(`  · etiqueta ${doisDig(i + 1)} — ${dataHora(f.capturada)}`);
+        linhas_eq.push(`  · etiqueta ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
       }
     });
     equipamento.fotos.forEach((f, i) => {
       if (f.capturada) {
-        linhas_eq.push(`  · ${doisDig(i + 1)} — ${dataHora(f.capturada)}`);
+        linhas_eq.push(`  · ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
       }
     });
     if (!linhas_eq.length) return;
@@ -2277,6 +2315,8 @@ function recomeçar() {
   estado.local = [];
   // Cada registo decide as suas omissões.
   estado.dispensas = novasDispensas();
+  estado.notasFotos = false;
+  $("notas-fotos").checked = false;
   $("num").disabled = false;
   ["morada", "contacto", "pretendido"].forEach((id) => { $(id).value = ""; });
   $("obs").value = "";
@@ -2441,6 +2481,15 @@ $("cliente").addEventListener("input", (e) => {
 
 // Tal como os outros campos: o erro sai assim que o campo fica valido, em vez
 // de ficar vermelho ate se voltar a carregar em Partilhar.
+// Desligar a pergunta esconde os campos, mas o que já estava escrito não deve
+// ficar à espera escondido: ou é enviado sem se ver, ou fica invisível para
+// sempre. Limpa-se, tal como uma dispensa desligada limpa o motivo.
+$("notas-fotos").addEventListener("change", (e) => {
+  estado.notasFotos = e.target.checked;
+  if (!e.target.checked) todosItens().forEach((f) => { if (f) f.nota = ""; });
+  desenhar();
+});
+
 $("morada").addEventListener("input", (e) => {
   if (e.target.value.trim().length >= 3) marcar("morada", "morada-err", false);
 });

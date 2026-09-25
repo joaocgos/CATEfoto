@@ -111,6 +111,24 @@ tudo com as mesmas fotografias. Estas só desaparecem quando se toca em
 equipamentos e a classificação (tipo, momento e garantia). Só o nome de quem
 regista é que se mantém.
 
+### Descrição por fotografia
+
+Uma pergunta única, logo à entrada das fotografias: **"Estas fotografias
+precisam de descrição?"**. No caso comum fica desligada, e nada muda. Marcada,
+cada fotografia — de qualquer parte do registo, etiquetas incluídas — ganha um
+campo de texto opcional por baixo, até 140 caracteres, e a grelha passa de três
+colunas para uma só, com espaço para escrever.
+
+A descrição vai no corpo do email, junto da hora a que essa fotografia foi
+tirada:
+
+    Tiradas em:
+      · 01 — 12/09/2026 10:03 — "risco já existente antes da recolha"
+      · 02 — 12/09/2026 10:04
+
+Desligar a pergunta apaga o que estava escrito — não fica nada escondido à
+espera. Um "Novo registo" começa sempre com a pergunta desligada.
+
 ### Folha de serviço
 
 Quando há um número de serviço preenchido — obrigatório ou não — aparece um
