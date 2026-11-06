@@ -24,8 +24,9 @@ e se usa por si.
 | `logo.png` | Logótipo do cabeçalho |
 | `icon-192.png`, `icon-512.png` | Ícones do ecrã principal do telemóvel |
 | `manifest.webmanifest` | Faz com que abra em ecrã inteiro, sem barra do browser |
+| `manual.html` | Manual de utilização para os colaboradores, aberto pelo botão **Manual** do cabeçalho |
 
-Os quatro ficheiros têm de ficar na **mesma pasta**.
+Os ficheiros têm de ficar na **mesma pasta**.
 
 ---
 
