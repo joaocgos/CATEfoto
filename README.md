@@ -24,7 +24,7 @@ e se usa por si.
 | `logo.png` | Logótipo do cabeçalho |
 | `icon-192.png`, `icon-512.png` | Ícones do ecrã principal do telemóvel |
 | `manifest.webmanifest` | Faz com que abra em ecrã inteiro, sem barra do browser |
-| `manual.html` | Manual de utilização para os colaboradores, aberto pelo botão **Manual** do cabeçalho |
+| `manual.html` | Manual completo, aberto pela ligação no fim do cartão **Como usar** do ecrã inicial |
 
 Os ficheiros têm de ficar na **mesma pasta**.
 
@@ -67,6 +67,10 @@ o Android chega a mostrá-lo diretamente no menu de partilha.
 ---
 
 ## Como se usa
+
+O próprio ecrã inicial tem um cartão **Como usar**, fechado por omissão, que se abre e
+se lê ali mesmo: passo a passo, envio para a loja, o que cada momento pede,
+omissões, boas fotografias e limites. No fim tem a ligação para o manual completo.
 
 1. Escolher o **tipo de serviço**, depois o **momento** e, se se aplicar, a
    **garantia**. As escolhas aparecem uma a uma, e cada uma feita encolhe para

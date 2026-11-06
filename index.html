@@ -102,13 +102,31 @@
   .titulo p {
     margin: 1px 0 0; font-size: 11.5px; color: var(--muted);
   }
-  /* Ligação ao manual, encostada à direita do cabeçalho. */
-  .manual-link {
-    margin-left: auto; padding: 6px 12px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--card);
-    font-size: 13px; font-weight: 600; color: var(--ink-2); text-decoration: none;
+  /* ── Instruções no ecrã inicial ─────────────────────────────────────── */
+  details.ajuda { padding: 0; }
+  details.ajuda > summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 20px; cursor: pointer; list-style: none;
   }
-  .manual-link:active { border-color: var(--red); color: var(--red); }
+  details.ajuda > summary::-webkit-details-marker { display: none; }
+  details.ajuda .ajuda-t { font-size: 15px; font-weight: 700; color: var(--ink); }
+  details.ajuda .ajuda-s { font-size: 13px; font-weight: 600; color: var(--red); }
+  details.ajuda .ajuda-s::after { content: " ▾"; }
+  details.ajuda[open] .ajuda-s::after { content: " ▴"; }
+  details.ajuda[open] .ajuda-s .abrir { display: none; }
+  details.ajuda:not([open]) .ajuda-s .fechar { display: none; }
+  .ajuda-corpo { padding: 0 20px 20px; border-top: 1px solid var(--line); }
+  .ajuda-corpo h3 { margin: 18px 0 6px; font-size: 14px; letter-spacing: .02em; }
+  .ajuda-corpo p, .ajuda-corpo li { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+  .ajuda-corpo p { margin: 0 0 8px; }
+  .ajuda-corpo ol, .ajuda-corpo ul { margin: 0; padding-left: 20px; }
+  .ajuda-corpo li { margin: 4px 0; }
+  .ajuda-aviso {
+    margin: 14px 0 0; padding: 12px 14px; border-radius: 12px;
+    background: var(--red-soft); color: var(--ink);
+  }
+  .ajuda-aviso p { margin: 0; color: var(--ink); }
+  .ajuda-corpo a { color: var(--red); font-weight: 600; }
 
   main { padding: 20px 20px 0; }
 
@@ -497,11 +515,63 @@
         <h1>CATEfoto</h1>
         <p>Registo fotográfico de serviço</p>
       </div>
-      <a class="manual-link" href="manual.html" target="_blank" rel="noopener">Manual</a>
     </div>
   </header>
 
   <main>
+
+    <!-- Instruções de utilização, à mão no ecrã inicial. Fechado por omissão,
+         para não empurrar o formulário. O manual completo é uma página à parte. -->
+    <details class="card ajuda" id="ajuda">
+      <summary>
+        <span class="ajuda-t">Como usar</span>
+        <span class="ajuda-s"><span class="abrir">Ler as instruções</span><span class="fechar">Fechar</span></span>
+      </summary>
+      <div class="ajuda-corpo">
+        <h3>Passo a passo</h3>
+        <ol>
+          <li>Escolhe o <b>tipo de serviço</b> e o <b>momento</b>, e indica a <b>garantia</b> (no Orçamento não há).</li>
+          <li>Escreve o <b>número do serviço</b>, só algarismos e sem espaços, e o teu nome.</li>
+          <li>Tira as fotografias com <b>Câmara</b>, ou escolhe-as da <b>Galeria</b>. O ✕ da miniatura apaga uma.</li>
+          <li>Toca em <b>Partilhar registo</b> e escolhe a app de email.</li>
+          <li>No email, carrega em <b>enviar</b>.</li>
+        </ol>
+        <div class="ajuda-aviso">
+          <p><b>Partilhar não envia o email.</b> O registo só chega à loja quando carregares em enviar dentro da app de email. Se fechaste o email sem enviar, o ecrã final tem <b>Partilhar outra vez</b>.</p>
+        </div>
+
+        <h3>Enviar para a tua loja</h3>
+        <ol>
+          <li>No fim do formulário, no cartão <b>Enviar para</b>, toca em <b>copiar</b> na linha da tua loja.</li>
+          <li>Partilha o registo e, no email, cola o endereço em «Para».</li>
+          <li>O assunto costuma vir preenchido. Se vier vazio, copia-o do mesmo cartão.</li>
+        </ol>
+
+        <h3>O que cada momento pede</h3>
+        <ul>
+          <li><b>Recolha</b> e <b>Reparação</b> (em casa do cliente): o número pode ser omitido, e então pede o nome do cliente e a morada.</li>
+          <li><b>Entrada Oficina</b> e <b>Montagem</b>: o número e a etiqueta do equipamento são obrigatórios.</li>
+          <li><b>Entrega</b>: o número é obrigatório; «Recebido por» é opcional.</li>
+          <li><b>Orçamento</b>: nome do cliente, morada e o que o cliente pretende são obrigatórios. As fotografias são do local.</li>
+          <li>Em garantia, a <b>fatura</b> é pedida no primeiro contacto (Recolha, Reparação, Entrada Oficina e Montagem).</li>
+        </ul>
+
+        <h3>Quando falta alguma coisa</h3>
+        <p>O número do serviço, a etiqueta e a fatura têm uma caixa <b>«omitir (fica registado)»</b>. Marca-a só quando falta mesmo: o email diz que a omissão foi uma decisão tua, com o motivo se o escreveres.</p>
+
+        <h3>Boas fotografias</h3>
+        <ul>
+          <li><b>Etiqueta:</b> de perto, com boa luz. A marca, o modelo e o número de série têm de se ler.</li>
+          <li><b>Equipamento:</b> uma de conjunto e uma de perto para cada risco ou amolgadela.</li>
+          <li><b>Fatura:</b> a página inteira. Se estiver no telemóvel do cliente, fotografa o ecrã.</li>
+        </ul>
+
+        <h3>Limites</h3>
+        <p>10 fotografias por equipamento (20 em Ar Condicionado com garantia), 2 etiquetas, 4 da folha de serviço, 3 da fatura, 12 do local no Orçamento e 20 equipamentos. Acima de 8 MB a app avisa que o registo está pesado: divide-o em dois.</p>
+
+        <p style="margin-top:14px"><a href="manual.html" target="_blank" rel="noopener">Abrir o manual completo</a></p>
+      </div>
+    </details>
 
     <!-- Três passos, por esta ordem: tipo → momento → garantia. Só um está
          aberto de cada vez; os já escolhidos encolhem para uma linha. -->
@@ -2334,6 +2404,7 @@ function recomeçar() {
   estado.dispensas = novasDispensas();
   estado.notasFotos = false;
   $("notas-fotos").checked = false;
+  $("ajuda").open = false;
   $("num").disabled = false;
   ["morada", "contacto", "pretendido"].forEach((id) => { $(id).value = ""; });
   $("obs").value = "";
