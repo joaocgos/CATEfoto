@@ -69,8 +69,12 @@ o Android chega a mostrá-lo diretamente no menu de partilha.
 ## Como se usa
 
 O próprio ecrã inicial tem um cartão **Como usar**, fechado por omissão, que se abre e
-se lê ali mesmo: passo a passo, envio para a loja, o que cada momento pede,
-omissões, boas fotografias e limites. No fim tem a ligação para o manual completo.
+se lê ali mesmo: o aviso de que partilhar não envia, o passo a passo e o envio para
+a loja. O resto (o que cada momento pede, quando omitir, boas fotografias, limites
+e problemas frequentes) vive só no `manual.html`, que é a fonte única dessas regras.
+
+As regras que dependem do momento também aparecem no cartão onde a dúvida surge: a
+dica do número do serviço, das etiquetas e da fatura diz quando se pode omitir.
 
 1. Escolher o **tipo de serviço**, depois o **momento** e, se se aplicar, a
    **garantia**. As escolhas aparecem uma a uma, e cada uma feita encolhe para

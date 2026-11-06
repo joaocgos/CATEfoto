@@ -93,7 +93,7 @@
     padding: 14px 20px;
   }
   .header-in img { height: 26px; width: auto; display: block; }
-  .marca { font-size: 21px; font-weight: 800; letter-spacing: .04em; color: var(--red); }
+  .marca { font-size: 21px; font-weight: 800; letter-spacing: .04em; color: var(--red-txt); }
   /* align-self: stretch faz o separador acompanhar a altura do bloco de
      titulo, que agora tem duas linhas. */
   .header-sep { width: 1px; align-self: stretch; background: var(--line); }
@@ -102,7 +102,7 @@
     letter-spacing: .01em; color: var(--ink-2);
   }
   .titulo p {
-    margin: 1px 0 0; font-size: 11.5px; color: var(--muted);
+    margin: 1px 0 0; font-size: 12px; color: var(--muted);
   }
   /* ── Instruções no ecrã inicial ─────────────────────────────────────── */
   details.ajuda { padding: 0; }
@@ -119,17 +119,20 @@
   details.ajuda[open] .ajuda-s .abrir { display: none; }
   details.ajuda:not([open]) .ajuda-s .fechar { display: none; }
   .ajuda-corpo { padding: 0 20px 20px; border-top: 1px solid var(--line); }
-  .ajuda-corpo h3 { margin: 18px 0 6px; font-size: 14px; letter-spacing: .02em; }
+  .ajuda-corpo h2 { margin: 22px 0 8px; }
+  .ajuda-corpo .ajuda-aviso + h2 { margin-top: 20px; }
   .ajuda-corpo p, .ajuda-corpo li { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
   .ajuda-corpo p { margin: 0 0 8px; }
   .ajuda-corpo ol, .ajuda-corpo ul { margin: 0; padding-left: 20px; }
   .ajuda-corpo li { margin: 4px 0; }
   .ajuda-aviso {
-    margin: 14px 0 0; padding: 12px 14px; border-radius: 12px;
+    margin: 16px 0 0; padding: 12px 14px; border-radius: 12px;
     background: var(--red-soft); color: var(--ink);
   }
   .ajuda-aviso p { margin: 0; color: var(--ink); }
   .ajuda-corpo a { color: var(--red-txt); font-weight: 600; }
+  .ajuda-mais { margin: 22px 0 0; }
+  .ajuda-mais span { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
 
   main { padding: 20px 20px 0; }
 
@@ -157,7 +160,7 @@
     font-size: 12px; font-weight: 600; color: var(--muted);
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
-  .counter.full { color: var(--red); }
+  .counter.full { color: var(--red-txt); }
 
   /* ── Campos ───────────────────────────────────────────────────────────── */
   .field { margin-bottom: 16px; }
@@ -199,7 +202,7 @@
   .invalid { border-color: var(--red) !important; }
   .err {
     display: none; margin: 7px 0 0;
-    font-size: 12.5px; font-weight: 600; color: var(--red);
+    font-size: 12.5px; font-weight: 600; color: var(--red-txt);
   }
   .err.show { display: block; }
 
@@ -222,11 +225,11 @@
   .seg-t { display: block; font-size: 15px; font-weight: 700; }
   .seg-s { display: block; margin-top: 1px; font-size: 12.5px; font-weight: 500;
            color: var(--muted); transition: color .15s; }
-  .seg[aria-pressed="true"] .seg-s { color: var(--red); opacity: .8; }
+  .seg[aria-pressed="true"] .seg-s { color: var(--red-txt); opacity: .8; }
   .seg[aria-pressed="true"] {
     border-color: var(--red);
     background: var(--red-soft);
-    color: var(--red);
+    color: var(--red-txt);
   }
   .seg[aria-pressed="true"] svg { stroke: var(--red); }
 
@@ -254,7 +257,7 @@
     transition: border-color .15s, color .15s, background .15s;
   }
   .pick svg { width: 20px; height: 20px; stroke: currentColor; flex: none; }
-  .pick:active { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+  .pick:active { background: var(--red-soft); border-color: var(--red); color: var(--red-txt); }
   .pick:disabled { opacity: .4; cursor: not-allowed; }
 
   /* ── Contador de equipamentos ─────────────────────────────────────────── */
@@ -274,7 +277,7 @@
     font: inherit; font-size: 24px; font-weight: 600; line-height: 1;
     cursor: pointer;
   }
-  .stepper button:active { border-color: var(--red); color: var(--red); }
+  .stepper button:active { border-color: var(--red); color: var(--red-txt); }
   .stepper button:disabled { opacity: .35; cursor: not-allowed; }
   .stepper span {
     flex: 1; text-align: center;
@@ -381,8 +384,8 @@
     font-size: 12px; color: var(--muted);
   }
   .dest b { color: var(--ink-2); font-weight: 600; }
-  #aviso-tamanho { color: var(--red); font-weight: 600; margin-bottom: 2px; }
-  .totals strong.pesado { color: var(--red); }
+  #aviso-tamanho { color: var(--red-txt); font-weight: 600; margin-bottom: 2px; }
+  .totals strong.pesado { color: var(--red-txt); }
 
   /* ── Aviso flutuante ──────────────────────────────────────────────────── */
   #toast {
@@ -454,14 +457,14 @@
     letter-spacing: .06em; color: var(--muted);
   }
   .passo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; }
-  .passo-alterar { flex: none; font-size: 13px; font-weight: 600; color: var(--red); }
+  .passo-alterar { flex: none; font-size: 13px; font-weight: 600; color: var(--red-txt); }
 
   /* ── Caixas das lojas, no rodapé ──────────────────────────────────────── */
   .lojas { margin: 0; }
   .dest-link {
     background: none; border: none; padding: 4px 6px;
     font: inherit; font-size: 12px; font-weight: 600;
-    color: var(--red); cursor: pointer;
+    color: var(--red-txt); cursor: pointer;
   }
   .loja { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
   .loja + .loja { border-top: 1px solid var(--line); }
@@ -531,7 +534,11 @@
         <span class="ajuda-s"><span class="abrir">Ler as instruções</span><span class="fechar">Fechar</span></span>
       </summary>
       <div class="ajuda-corpo">
-        <h3>Passo a passo</h3>
+        <div class="ajuda-aviso">
+          <p><b>Partilhar não envia o email.</b> O registo só chega à loja quando carregares em <b>enviar</b> dentro da app de email. Se fechaste o email sem enviar, o ecrã final tem <b>Partilhar outra vez</b>.</p>
+        </div>
+
+        <h2>Passo a passo</h2>
         <ol>
           <li>Escolhe o <b>tipo de serviço</b> e o <b>momento</b>, e indica a <b>garantia</b> (no Orçamento não há).</li>
           <li>Escreve o <b>número do serviço</b>, só algarismos e sem espaços, e o teu nome.</li>
@@ -539,40 +546,18 @@
           <li>Toca em <b>Partilhar registo</b> e escolhe a app de email.</li>
           <li>No email, carrega em <b>enviar</b>.</li>
         </ol>
-        <div class="ajuda-aviso">
-          <p><b>Partilhar não envia o email.</b> O registo só chega à loja quando carregares em enviar dentro da app de email. Se fechaste o email sem enviar, o ecrã final tem <b>Partilhar outra vez</b>.</p>
-        </div>
 
-        <h3>Enviar para a tua loja</h3>
+        <h2>Enviar para a tua loja</h2>
         <ol>
           <li>No fim do formulário, no cartão <b>Enviar para</b>, toca em <b>copiar</b> na linha da tua loja.</li>
           <li>Partilha o registo e, no email, cola o endereço em «Para».</li>
           <li>O assunto costuma vir preenchido. Se vier vazio, copia-o do mesmo cartão.</li>
         </ol>
 
-        <h3>O que cada momento pede</h3>
-        <ul>
-          <li><b>Recolha</b> e <b>Reparação</b> (em casa do cliente): o número pode ser omitido, e então pede o nome do cliente e a morada.</li>
-          <li><b>Entrada Oficina</b> e <b>Montagem</b>: o número e a etiqueta do equipamento são obrigatórios.</li>
-          <li><b>Entrega</b>: o número é obrigatório; «Recebido por» é opcional.</li>
-          <li><b>Orçamento</b>: nome do cliente, morada e o que o cliente pretende são obrigatórios. As fotografias são do local.</li>
-          <li>Em garantia, a <b>fatura</b> é pedida no primeiro contacto (Recolha, Reparação, Entrada Oficina e Montagem).</li>
-        </ul>
-
-        <h3>Quando falta alguma coisa</h3>
-        <p>O número do serviço, a etiqueta e a fatura têm uma caixa <b>«omitir (fica registado)»</b>. Marca-a só quando falta mesmo: o email diz que a omissão foi uma decisão tua, com o motivo se o escreveres.</p>
-
-        <h3>Boas fotografias</h3>
-        <ul>
-          <li><b>Etiqueta:</b> de perto, com boa luz. A marca, o modelo e o número de série têm de se ler.</li>
-          <li><b>Equipamento:</b> uma de conjunto e uma de perto para cada risco ou amolgadela.</li>
-          <li><b>Fatura:</b> a página inteira. Se estiver no telemóvel do cliente, fotografa o ecrã.</li>
-        </ul>
-
-        <h3>Limites</h3>
-        <p>10 fotografias por equipamento (20 em Ar Condicionado com garantia), 2 etiquetas, 4 da folha de serviço, 3 da fatura, 12 do local no Orçamento e 20 equipamentos. Acima de 8 MB a app avisa que o registo está pesado: divide-o em dois.</p>
-
-        <p style="margin-top:14px"><a href="manual.html" target="_blank" rel="noopener">Abrir o manual completo</a></p>
+        <p class="ajuda-mais">
+          <a href="manual.html" target="_blank" rel="noopener">Abrir o manual completo</a>
+          <span>O que cada momento pede, quando omitir, boas fotografias, limites e problemas frequentes.</span>
+        </p>
       </div>
     </details>
 
@@ -626,7 +611,7 @@
     <!-- Serviço ------------------------------------------------------------->
     <section class="card">
       <div class="card-head"><h2>Serviço</h2></div>
-      <p class="card-hint">Apenas dígitos, sem espaços.</p>
+      <p class="card-hint" id="num-hint">Apenas dígitos, sem espaços.</p>
 
       <div class="field">
         <label class="lbl" for="num" id="num-lbl">Número do serviço</label>
@@ -1616,7 +1601,8 @@ function desenharFatura() {
   const dica = document.createElement("p");
   dica.className = "card-hint";
   dica.textContent = "A fatura de compra do equipamento — é o que prova a " +
-                     "garantia. Se o cliente a tiver no telemóvel, fotografa o ecrã.";
+                     "garantia. Se o cliente a tiver no telemóvel, fotografa o ecrã." +
+                     (faturaObrigatoria() ? " Se não a tiver, marca a caixa por baixo." : "");
 
   const pickers = document.createElement("div");
   pickers.className = "pickers";
@@ -1734,7 +1720,8 @@ function desenharEquipamentos() {
 
     const subEtiquetas = construirSubseccao(
       eq, "etiquetas", obrigatoria ? "Etiquetas · obrigatória" : "Etiquetas",
-      m.ajudaEtiquetas || "A chapa com a marca, o modelo e o número de série.",
+      (m.ajudaEtiquetas || "A chapa com a marca, o modelo e o número de série.") +
+        (obrigatoria ? " Se a chapa não se lê ou não existe, marca a caixa por baixo." : ""),
       "in-etq-cam", "in-etq-gal");
     // Obrigatória, mas há chapas que não se leem ou já não existem: aí
     // dispensa-se, e fica escrito. Antes, esse caso era um beco sem saída.
@@ -1873,6 +1860,13 @@ const numeroDispensado = () =>
   marcaMomento("numeroDispensavel") && estado.dispensas.numero.marcada;
 
 function actualizarCampoNumero() {
+  // A dica diz o que fazer quando o número ainda não existe, no sítio onde
+  // essa dúvida aparece.
+  $("num-hint").textContent = marcaMomento("numeroDispensavel")
+    ? "Só algarismos, sem espaços. Ainda sem número? Marca a caixa por baixo e indica o cliente e a morada."
+    : marcaMomento("numeroOpcional")
+      ? "Só algarismos, sem espaços. Pode ficar vazio."
+      : "Apenas dígitos, sem espaços.";
   const obrigatorio = numeroObrigatorio();
   const dispensado = numeroDispensado();
   $("num-lbl").textContent = obrigatorio ? "Número do serviço"

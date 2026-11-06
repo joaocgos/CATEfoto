@@ -20,7 +20,7 @@
     --card:   #FFFFFF;
     --warn:   #8A5A00;
     --warn-soft: rgba(224, 160, 20, 0.16);
-    --ok:     #14804A;
+    --ok:     #0F6F40;
     --ok-soft: rgba(20, 128, 74, 0.10);
     --code:   #F1F1F3;
     --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
@@ -104,10 +104,12 @@
   a:focus-visible, summary:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; border-radius: 4px; }
 
   /* Índice */
-  nav.indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+  /* Uma só linha, com rolagem própria: o conteúdo começa no primeiro ecrã. */
+  nav.indice { display: flex; flex-wrap: nowrap; gap: 8px; margin: 0 0 24px; overflow-x: auto; padding-bottom: 4px; }
   nav.indice a {
     padding: 7px 13px; border-radius: 999px; font-size: 14px; font-weight: 600;
     background: var(--card); border: 1px solid var(--line); color: var(--ink-2); text-decoration: none;
+    flex: none; white-space: nowrap;
   }
   nav.indice a:hover { border-color: var(--red); color: var(--red-txt); }
 
@@ -161,6 +163,8 @@
   .t-opc   { background: var(--code); color: var(--muted); }
   .t-omit  { background: var(--warn-soft); color: var(--warn); }
   .t-cond  { background: var(--ok-soft); color: var(--ok); }
+  .t-par   { background: var(--warn-soft); color: var(--ink-2); }
+  .t-par b { color: var(--red-txt); }
 
   /* Cartões dos momentos */
   .momentos { display: grid; gap: 12px; grid-template-columns: 1fr; margin-top: 4px; }
@@ -197,6 +201,17 @@
   footer { margin-top: 28px; font-size: 13px; color: var(--muted); text-align: center; }
 
   @media print {
+    /* Em papel é sempre tema claro, mesmo com o sistema em modo escuro. */
+    :root:root:root {
+      --red-txt: #C51605; --red-soft: rgba(227,10,23,.08);
+      --ink: #000; --ink-2: #222; --muted: #555; --line: #CFCFCF;
+      --bg: #fff; --card: #fff; --code: #F1F1F3;
+      --warn: #6B4400; --warn-soft: rgba(224,160,20,.16);
+      --ok: #0F6F40; --ok-soft: rgba(20,128,74,.10);
+      color-scheme: light;
+    }
+    .logo-claro { display: block !important; }
+    .logo-escuro { display: none !important; }
     body { background: #fff; color: #000; }
     nav.indice { display: none; }
     section.bloco { box-shadow: none; break-inside: avoid-page; }
@@ -219,15 +234,11 @@
   <p class="lede">A CATEfoto é a página onde fotografas cada passo de um serviço e envias tudo por email para a caixa da tua loja. Não instalas nada e não crias conta.</p>
 
   <nav class="indice" aria-label="Índice">
-    <a href="#resumo">Resumo</a>
-    <a href="#comecar">Antes de começar</a>
     <a href="#passos">Passo a passo</a>
     <a href="#enviar">Enviar o email</a>
     <a href="#momentos">Cada momento</a>
     <a href="#omitir">Quando falta algo</a>
     <a href="#limites">Limites</a>
-    <a href="#fotos">Boas fotografias</a>
-    <a href="#recebe">O que chega à loja</a>
     <a href="#problemas">Problemas</a>
   </nav>
 
@@ -297,11 +308,11 @@
         <h3>Recolha</h3>
         <p class="quando">Em casa do cliente, ao levantar o equipamento.</p>
         <ul>
-          <li><span>Número do serviço</span><span class="tag t-obrig">Obrigatório</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Número do serviço</span><span class="tag t-par"><b>Obrigatório</b> · podes omitir</span></li>
           <li><span>Nome do cliente e morada</span><span class="tag t-cond">Só se omitires o número</span></li>
           <li><span>Etiquetas do equipamento</span><span class="tag t-opc">Opcional</span></li>
           <li><span>Folha de serviço</span><span class="tag t-opc">Opcional, com número</span></li>
-          <li><span>Fatura, se em garantia</span><span class="tag t-obrig">Obrigatória</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Fatura, se em garantia</span><span class="tag t-par"><b>Obrigatória</b> · podes omitir</span></li>
         </ul>
       </article>
 
@@ -309,11 +320,11 @@
         <h3>Reparação</h3>
         <p class="quando">Resolvida no local, em casa do cliente.</p>
         <ul>
-          <li><span>Número do serviço</span><span class="tag t-obrig">Obrigatório</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Número do serviço</span><span class="tag t-par"><b>Obrigatório</b> · podes omitir</span></li>
           <li><span>Nome do cliente e morada</span><span class="tag t-cond">Só se omitires o número</span></li>
           <li><span>Etiquetas do equipamento</span><span class="tag t-opc">Opcional</span></li>
           <li><span>Folha de serviço</span><span class="tag t-opc">Opcional, com número</span></li>
-          <li><span>Fatura, se em garantia</span><span class="tag t-obrig">Obrigatória</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Fatura, se em garantia</span><span class="tag t-par"><b>Obrigatória</b> · podes omitir</span></li>
         </ul>
       </article>
 
@@ -322,9 +333,9 @@
         <p class="quando">Equipamento que dá entrada, trazido pelo técnico ou entregue pelo cliente ao balcão.</p>
         <ul>
           <li><span>Número do serviço</span><span class="tag t-obrig">Obrigatório</span></li>
-          <li><span>Etiqueta, por equipamento</span><span class="tag t-obrig">Obrigatória</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Etiqueta, por equipamento</span><span class="tag t-par"><b>Obrigatória</b> · podes omitir</span></li>
           <li><span>Folha de serviço</span><span class="tag t-opc">Opcional</span></li>
-          <li><span>Fatura, se em garantia</span><span class="tag t-obrig">Obrigatória</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Fatura, se em garantia</span><span class="tag t-par"><b>Obrigatória</b> · podes omitir</span></li>
         </ul>
       </article>
 
@@ -344,9 +355,9 @@
         <p class="quando">Instalação de equipamento novo. Podes declarar vários equipamentos no mesmo serviço.</p>
         <ul>
           <li><span>Número do serviço</span><span class="tag t-obrig">Obrigatório</span></li>
-          <li><span>Etiqueta, por equipamento</span><span class="tag t-obrig">Obrigatória</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Etiqueta, por equipamento</span><span class="tag t-par"><b>Obrigatória</b> · podes omitir</span></li>
           <li><span>Recebido por</span><span class="tag t-opc">Opcional</span></li>
-          <li><span>Fatura, se em garantia</span><span class="tag t-obrig">Obrigatória</span><span class="tag t-omit">Podes omitir</span></li>
+          <li><span>Fatura, se em garantia</span><span class="tag t-par"><b>Obrigatória</b> · podes omitir</span></li>
         </ul>
         <p class="quando" style="margin:10px 0 0">Nas fotografias mostra o equipamento instalado e as ligações feitas. A etiqueta dá acesso à garantia do equipamento novo.</p>
       </article>
