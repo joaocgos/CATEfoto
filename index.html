@@ -557,7 +557,7 @@
         <h2>Passo a passo</h2>
         <ol>
           <li>Escolhe o <b>tipo de serviço</b> e o <b>momento</b>, e indica a <b>garantia</b> (no Orçamento não há).</li>
-          <li>Escreve o <b>número do serviço</b>, só algarismos e sem espaços, e o teu nome.</li>
+          <li>Escreve o <b>número do serviço</b> (letras maiúsculas, algarismos e traços, sem espaços) e o teu nome.</li>
           <li>Tira as fotografias com <b>Câmara</b>, ou escolhe-as da <b>Galeria</b>. O ✕ da miniatura apaga uma.</li>
           <li>Toca em <b>Partilhar registo</b> e escolhe a app de email.</li>
           <li>No email, carrega em <b>enviar</b>.</li>
@@ -627,22 +627,22 @@
     <!-- Serviço ------------------------------------------------------------->
     <section class="card">
       <div class="card-head"><h2>Serviço</h2></div>
-      <p class="card-hint" id="num-hint">Apenas dígitos, sem espaços.</p>
+      <p class="card-hint" id="num-hint">Letras maiúsculas, algarismos e traços, sem espaços.</p>
 
       <div class="field">
         <label class="lbl" for="num" id="num-lbl">Número do serviço</label>
-        <input id="num" type="text" inputmode="numeric" autocomplete="off"
+        <input id="num" type="text" autocomplete="off" autocapitalize="characters"
                placeholder="Ex.: 26000123" aria-describedby="num-err">
         <p class="err" role="alert" id="num-err">Indica o número do serviço.</p>
         <div id="dispensa-numero" hidden></div>
       </div>
 
       <!-- O número do serviço noutra entidade (marca, seguradora, parceiro), com
-           ou sem garantia. O interno (acima) é sempre só algarismos; este pode ter
-           letras e traços. Nenhum aceita espaços, e este nunca é obrigatório. -->
+           ou sem garantia. Os dois seguem a mesma regra (letras, algarismos e traços,
+           sem espaços); este nunca é obrigatório. -->
       <div class="field" id="campo-num-externo" hidden>
         <label class="lbl" for="num-externo">Número do serviço externo (opcional)</label>
-        <input id="num-externo" type="text" autocomplete="off" maxlength="40"
+        <input id="num-externo" type="text" autocomplete="off" autocapitalize="characters" maxlength="40"
                placeholder="Se houver, sem espaços">
       </div>
 
@@ -1912,10 +1912,10 @@ function actualizarCampoNumero() {
   // A dica diz o que fazer quando o número ainda não existe, no sítio onde
   // essa dúvida aparece.
   $("num-hint").textContent = marcaMomento("numeroDispensavel")
-    ? "Só algarismos, sem espaços. Ainda sem número? Marca a caixa por baixo e indica o cliente e a morada."
+    ? "Letras maiúsculas, algarismos e traços, sem espaços. Ainda sem número? Marca a caixa por baixo e indica o cliente e a morada."
     : marcaMomento("numeroOpcional")
-      ? "Só algarismos, sem espaços. Pode ficar vazio."
-      : "Apenas dígitos, sem espaços.";
+      ? "Letras maiúsculas, algarismos e traços, sem espaços. Pode ficar vazio."
+      : "Letras maiúsculas, algarismos e traços, sem espaços.";
   const obrigatorio = numeroObrigatorio();
   const dispensado = numeroDispensado();
   // Onde pode haver um serviço externo, este é o interno — o externo tem campo próprio.
@@ -2035,7 +2035,8 @@ function validar() {
   const num = $("num").value.trim();
   const tec = $("tec").value.trim();
 
-  const numMal = numeroObrigatorio() && !/^\d+$/.test(num);
+  // Pelo menos uma letra ou algarismo: só traços não identificam serviço nenhum.
+  const numMal = numeroObrigatorio() && !/^(?=.*[A-Z0-9])[A-Z0-9-]+$/.test(num);
   // A fatura, onde é obrigatória, só pode faltar com a dispensa marcada.
   const fatMal = faturaObrigatoria()
     && !estado.fatura.some((f) => f.estado === "pronta")
@@ -2523,11 +2524,18 @@ $("logo").addEventListener("error", () => {
   document.querySelector(".marca").hidden = false;
 });
 
-// Só dígitos no número do serviço — sem limite de comprimento. Espaços e
-// qualquer outro caracter são descartados à medida que se escreve, o que
-// também limpa o que venha colado da área de transferência.
+// Números de serviço (interno e externo): letras maiúsculas sem acentos,
+// algarismos e traços, sem espaços. As minúsculas passam a maiúsculas. O interno entra nos nomes dos ficheiros, por isso tudo o
+// resto (espaços, acentos, barras) sai à medida que se escreve — o que também
+// limpa o que venha colado. Só se reescreve quando há o que tirar, para o
+// cursor não saltar para o fim a meio de uma correção.
+const limparNumero = (campo) => {
+  const limpo = campo.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  if (limpo !== campo.value) campo.value = limpo;
+};
+
 $("num").addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/\D/g, "");
+  limparNumero(e.target);
   const n = e.target.value.length;
   e.target.classList.toggle("longo", n > 12 && n <= 17);
   e.target.classList.toggle("enorme", n > 17);
@@ -2545,11 +2553,7 @@ $("num").addEventListener("input", (e) => {
   avisarEscondidas(antes);
 });
 
-// O serviço externo pode ter letras e traços, mas, tal como o interno, não
-// aceita espaços: tirá-los ao escrever e ao colar evita números que não batem.
-$("num-externo").addEventListener("input", (e) => {
-  e.target.value = e.target.value.replace(/\s/g, "");
-});
+$("num-externo").addEventListener("input", (e) => limparNumero(e.target));
 
 $("cliente").addEventListener("input", (e) => {
   if (e.target.value.trim().length >= 2) marcar("cliente", "cliente-err", false);

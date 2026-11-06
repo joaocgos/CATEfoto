@@ -143,8 +143,13 @@ async function correr() {
   titulo("Registo simples (Recolha, Doméstico, fora de garantia)");
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   escrever("num", "26000123"); escrever("tec", "Teste");
-  escrever("num", "26 00a1");
-  ok("O número só aceita algarismos, sem espaços nem letras", el("num").value === "26001", el("num").value);
+  escrever("num", "26 00a-1/ç");
+  ok("O número aceita letras, algarismos e traços; põe em maiúsculas e tira espaços, barras e acentos", el("num").value === "2600A-1", el("num").value);
+  escrever("num", "---");
+  E("validar()");
+  ok("Só traços não é um número válido", el("num").classList.contains("invalid"));
+  escrever("num", "AB-26000");
+  ok("Um número com letras serve para o assunto e para os ficheiros", E("assuntoDoRegisto()") === "AB-26000 · RECOLHA · DOMESTICO", E("assuntoDoRegisto()"));
   escrever("num", "26000123");
   ok("Sem fotografia não se pode partilhar", el("send").disabled);
   await juntar("Fotografias");
@@ -175,8 +180,8 @@ async function correr() {
   escrever("num", "26000124"); escrever("tec", "Teste");
   ok("Aparece em garantia", !el("campo-num-externo").hidden);
   ok("O número de cima passa a «interno»", el("num-lbl").textContent.includes("interno"), el("num-lbl").textContent);
-  escrever("num-externo", "AB 12-34");
-  ok("Aceita letras e traços, mas não espaços", el("num-externo").value === "AB12-34", el("num-externo").value);
+  escrever("num-externo", "ab 12-34/");
+  ok("O externo segue a mesma regra: letras, algarismos e traços", el("num-externo").value === "AB12-34", el("num-externo").value);
   await juntar("Fotografias");
   p = await partilhar();
   ok("Sem fatura nem omissão, não parte", !p);

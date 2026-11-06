@@ -170,9 +170,13 @@ na Entrega é opcional (ver `faturaObrigatoria`).
 Um serviço pode ter dois números: o **interno** e o de outra entidade (marca,
 seguradora, parceiro), com ou sem garantia. Em todos os momentos menos no
 Orçamento (marca `semServicoExterno`), o campo **Número do serviço** passa a dizer
-«interno» (continua só com algarismos) e aparece **Número do serviço externo
-(opcional)**, até 40 caracteres, sem espaços (tira-os ao escrever e ao colar), que
-pode ter letras e traços. Nunca é obrigatório e não tem caixa de omissão.
+«interno» e aparece **Número do serviço externo (opcional)**, até 40 caracteres.
+Nunca é obrigatório e não tem caixa de omissão.
+
+Os dois números seguem a mesma regra: **letras maiúsculas sem acentos, algarismos
+e traços, sem espaços**. As minúsculas passam a maiúsculas e o resto sai ao escrever e ao colar, porque o número interno entra
+nos nomes dos ficheiros (uma barra ou um acento partiam o nome). O interno precisa
+de pelo menos uma letra ou algarismo.
 
 Vai só no corpo do email, com a garantia logo por baixo:
 
