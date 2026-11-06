@@ -272,7 +272,7 @@
         <div class="nota">Cada escolha fecha numa linha com a palavra «alterar». Se te enganaste, toca nela e escolhe outra vez. As fotografias que já tiraste ficam guardadas.</div></li>
       <li><b>Preenche os dados</b><p>O <b>número do serviço</b> leva só algarismos, sem espaços. Em <b>Registado por</b> escreves o teu nome; o telemóvel guarda-o e não o voltas a escrever. Em garantia aparece também o <b>número de garantia</b>, opcional: o do fabricante, se já existir, que pode ter letras mas, tal como o outro, não aceita espaços. O número de cima passa a dizer «interno».</p></li>
       <li><b>Tira as fotografias</b><p><span class="btn">Câmara</span> tira a fotografia na hora. <span class="btn">Galeria</span> deixa escolher várias de uma vez. Para apagar uma, toca no ✕ da miniatura. A app reduz o tamanho das fotografias sozinha, para o email não as recusar.</p></li>
-      <li><b>Acrescenta o que for preciso</b><p>Em <b>Observações</b> escreves o que as fotografias não mostram. Se alguma fotografia precisar de explicação, marca «Estas fotografias precisam de descrição?» e aparece um campo por baixo de cada uma, com até 140 caracteres.</p></li>
+      <li><b>Acrescenta o que for preciso</b><p>Em <b>Observações</b> escreves o que as fotografias não mostram. Se alguma fotografia precisar de explicação, marca «Estas fotografias precisam de descrição?»: cada fotografia passa a aparecer pequena, com um campo ao lado, até 140 caracteres.</p></li>
       <li><b>Partilha e envia</b><p>Toca em <span class="btn vermelho">Partilhar registo</span>, escolhe a app de email e carrega em enviar lá dentro. Os pormenores estão na secção seguinte.</p></li>
     </ol>
   </section>
@@ -284,14 +284,14 @@
       <p>A CATEfoto entrega as fotografias à app de email. O registo só chega à loja quando carregares em <b>enviar</b> dentro do email.</p>
     </div>
     <ol class="passos">
-      <li><b>Copia a caixa da tua loja</b><p>No fim do formulário está o cartão <b>Enviar para</b>, com as caixas de Famalicão e do Porto. Também lá chegas pela ligação «Destino: a caixa da tua loja» junto ao botão Partilhar. Toca em <span class="btn">copiar</span> na linha da tua loja.</p></li>
+      <li><b>Copia a caixa da tua loja</b><p>No fim do formulário está o cartão <b>Enviar para</b>, com as caixas de Famalicão e do Porto. Também lá chegas pela ligação «Enviar para ↓», por cima do botão Partilhar. Toca em <span class="btn">copiar</span> na linha da tua loja.</p></li>
       <li><b>Partilha</b><p>Toca em <span class="btn vermelho">Partilhar registo</span> e escolhe o Gmail (ou a tua app de email).</p></li>
       <li><b>Cola o endereço</b><p>No email que abriu, cola o endereço no campo «Para».</p></li>
       <li><b>Confirma o assunto</b><p>Costuma vir preenchido, por exemplo <code>26000123 · OFICINA · DOMESTICO</code>. Se vier vazio, copia-o da linha <b>Assunto</b> do cartão Enviar para e cola-o.</p></li>
       <li><b>Carrega em enviar</b><p>Só depois disto o registo chegou à loja.</p></li>
     </ol>
     <h3>Depois de partilhar</h3>
-    <p>A app mostra o ecrã <b>Falta enviar o email</b>, com dois botões:</p>
+    <p>A app mostra o ecrã <b>Falta enviar o email</b>, com um recibo do que ficou pronto a enviar, por exemplo <code>26000123 · OFICINA · DOMESTICO · 2 fotografias</code>. Confere-o antes de ires ao email. Por baixo tens dois botões:</p>
     <ul class="lista">
       <li><span class="btn vermelho">Partilhar outra vez</span> repete a partilha com as mesmas fotografias. Usa-o se fechaste o email sem enviar ou escolheste a app errada.</li>
       <li><span class="btn">Novo registo</span> começa do zero e apaga as fotografias e os campos. Só o teu nome fica guardado.</li>
@@ -385,7 +385,7 @@
       <li>A <b>folha de serviço</b> aparece sempre que há número de serviço. Fotografa a frente e o verso.</li>
       <li>A <b>fatura</b> aparece só nos registos em garantia. Se o cliente a tiver no telemóvel, fotografa o ecrã. No primeiro contacto (Recolha, Reparação, Entrada Oficina e Montagem) é obrigatória; na Entrega é opcional.</li>
     </ul>
-    <div class="nota">Na Entrada Oficina a etiqueta continua obrigatória mesmo que já a tenhas enviado na recolha. A app avisa quando esse serviço já levou etiquetas noutro registo, mas pede-a outra vez: fotografa-a de novo, demora um segundo.</div>
+    <div class="nota">Na Entrada Oficina a etiqueta continua obrigatória mesmo que já a tenhas enviado na recolha. A app avisa quando esse serviço já teve etiquetas partilhadas noutro registo, mas pede-a outra vez: fotografa-a de novo, demora um segundo.</div>
   </section>
 
   <section class="bloco" id="omitir">
@@ -452,13 +452,15 @@
     <h3>Assunto</h3>
     <pre>26000123 · OFICINA · DOMESTICO</pre>
     <p>É o número do serviço, o momento e o tipo. Sem número de serviço, o assunto começa pelo nome do cliente. A garantia vai no corpo do email.</p>
+    <p>Em garantia, o corpo separa os dois números: o <b>Serviço interno</b> e o <b>Nº de garantia</b> do fabricante, quando o escreveste. Fora de garantia diz só «Serviço».</p>
     <h3>Ficheiros anexados</h3>
     <pre>26000123_recolha_hot_gar_eq1_etiqueta_01.jpg</pre>
     <p>O nome diz o serviço, o momento, o tipo (<code>dom</code>, <code>hot</code>, <code>ac</code>), a garantia (<code>gar</code> ou <code>fg</code>), o equipamento e a fotografia. É montado sozinho.</p>
     <h3>Corpo do email</h3>
     <pre>Registo fotográfico — CATEfoto
 
-Serviço: 26000123
+Serviço interno: 26000123
+Nº de garantia: AB12-34
 Momento: Entrada em oficina
 Tipo de serviço: Doméstico
 Garantia: Em garantia

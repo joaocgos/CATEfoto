@@ -190,6 +190,15 @@ async function correr() {
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   ok("Fora de garantia o campo não aparece", el("campo-gar-num").hidden);
   await novo();
+  classificar("Doméstico", "Entrega", "Em Garantia");
+  escrever("num", "26000129"); escrever("tec", "Teste");
+  escrever("gar-num", "XY9");
+  await juntar("Fotografias");
+  botao("garantias", "Fora de Garantia").click();   // o campo esconde-se, o texto fica guardado
+  p = await partilhar();
+  ok("Mudar para fora de garantia: o número de garantia não segue", p && !p.text.includes("Nº de garantia") && p.text.includes("Serviço: 26000129"), p && p.text.slice(0, 160));
+  await novo();
+  ok("Novo registo apaga o número de garantia", el("gar-num").value === "");
 
   titulo("Omitir o número (Recolha)");
   classificar("Doméstico", "Recolha", "Fora de Garantia");

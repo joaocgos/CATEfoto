@@ -2158,9 +2158,12 @@ function construirCorpo(num, momento, servico, garantia = null) {
   const numGarantia = emGar ? $("gar-num").value.trim() : "";
   // Só conta onde o campo existe — senão um valor antigo viajava para um
   // momento que nem o mostra.
-  const nFolha = num ? estado.folha.filter((f) => f.estado === "pronta").length : 0;
-  const nFatura = garantia === "garantia"
-    ? estado.fatura.filter((f) => f.estado === "pronta").length : 0;
+  // Contadas pela mesma regra que decide os ficheiros anexados (partesDoRegisto),
+  // para o corpo nunca dizer um número diferente do que segue.
+  const contar = (rotulo) => partesDoRegisto().filter((p) => p.rotulo === rotulo)
+    .reduce((t, p) => t + p.itens.filter((f) => f.estado === "pronta").length, 0);
+  const nFolha = contar("folha_");
+  const nFatura = contar("fatura_");
   const mom = MOMENTO_POR_CHAVE[momento] || {};
   const recebido = mom.campoRecebidoPor ? $("recebido").value.trim() : "";
   const mostrarContacto = !!mom.camposContacto;
