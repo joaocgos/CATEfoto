@@ -165,16 +165,23 @@ ficheiros saem como `26000123_recolha_dom_gar_fatura_01.jpg`.
 No primeiro contacto é obrigatória com dispensa ("O cliente não tem a fatura");
 na Entrega é opcional (ver `faturaObrigatoria`).
 
-### Número de garantia
+### Serviço externo
 
-Nos registos **em garantia** há dois números: o do serviço interno e o do processo
-no fabricante. O campo **Número do serviço** passa a dizer «interno» (continua só
-com algarismos) e aparece **Número de garantia (opcional)**, até 40 caracteres, sem
-espaços (tira-os ao escrever e ao colar), para o do fabricante, que pode ter
-letras e traços. Nunca é
-obrigatório e não tem caixa de omissão. Vai só no corpo do email
-(`Nº de garantia: …`); o assunto e os nomes dos ficheiros levam o número interno.
-O corpo diz «Serviço interno: …» em vez de «Serviço: …» para não haver dúvidas.
+Um serviço pode ter dois números: o **interno** e o de outra entidade (marca,
+seguradora, parceiro), com ou sem garantia. Em todos os momentos menos no
+Orçamento (marca `semServicoExterno`), o campo **Número do serviço** passa a dizer
+«interno» (continua só com algarismos) e aparece **Número do serviço externo
+(opcional)**, até 40 caracteres, sem espaços (tira-os ao escrever e ao colar), que
+pode ter letras e traços. Nunca é obrigatório e não tem caixa de omissão.
+
+Vai só no corpo do email, com a garantia logo por baixo:
+
+    Serviço interno: 26000123
+    Serviço externo: AB12-34
+    Garantia: Em garantia
+
+O assunto e os nomes dos ficheiros levam o número interno. No Orçamento o corpo
+diz só «Serviço: …» e um externo escrito antes de mudar de momento não segue.
 
 ### Dispensa com registo
 

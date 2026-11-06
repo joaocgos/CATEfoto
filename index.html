@@ -637,13 +637,13 @@
         <div id="dispensa-numero" hidden></div>
       </div>
 
-      <!-- O número do processo no fabricante. O interno (acima) é sempre só
-           algarismos; este pode ter letras e traços. Nenhum aceita espaços, e este
-           nunca é obrigatório. -->
-      <div class="field" id="campo-gar-num" hidden>
-        <label class="lbl" for="gar-num">Número de garantia (opcional)</label>
-        <input id="gar-num" type="text" autocomplete="off" maxlength="40"
-               placeholder="O do fabricante, sem espaços">
+      <!-- O número do serviço noutra entidade (marca, seguradora, parceiro), com
+           ou sem garantia. O interno (acima) é sempre só algarismos; este pode ter
+           letras e traços. Nenhum aceita espaços, e este nunca é obrigatório. -->
+      <div class="field" id="campo-num-externo" hidden>
+        <label class="lbl" for="num-externo">Número do serviço externo (opcional)</label>
+        <input id="num-externo" type="text" autocomplete="off" maxlength="40"
+               placeholder="Se houver, sem espaços">
       </div>
 
       <div class="field" id="campo-cliente" hidden>
@@ -940,6 +940,8 @@ const MOMENTOS = [
   { chave: "orcamento", nome: "Orçamento", detalhe: "levantamento do local",
     marca: "ORCAMENTO", texto: "Levantamento do local para orçamento",
     numeroOpcional: true,
+    // Um levantamento ainda não é um serviço de ninguém: não há número externo.
+    semServicoExterno: true,
     semEquipamentos: true,
     // Um levantamento de local não tem estado de garantia.
     semGarantia: true,
@@ -1916,11 +1918,11 @@ function actualizarCampoNumero() {
       : "Apenas dígitos, sem espaços.";
   const obrigatorio = numeroObrigatorio();
   const dispensado = numeroDispensado();
-  // Em garantia há dois números: este é o interno, e o do fabricante tem campo próprio.
-  const interno = emGarantia() ? " interno" : "";
+  // Onde pode haver um serviço externo, este é o interno — o externo tem campo próprio.
+  const interno = temServicoExterno() ? " interno" : "";
   $("num-lbl").textContent = obrigatorio ? `Número do serviço${interno}`
     : dispensado ? `Número do serviço${interno} (omitido)` : `Número do serviço${interno} (opcional)`;
-  $("campo-gar-num").hidden = !emGarantia();
+  $("campo-num-externo").hidden = !temServicoExterno();
   $("num").placeholder = dispensado ? "omitido"
     : obrigatorio ? "Ex.: 26000123" : "ainda sem número";
   if (!obrigatorio) marcar("num", "num-err", false);
@@ -1951,6 +1953,7 @@ const marcaMomento = (nome) => {
 const semEquipamentos = () => marcaMomento("semEquipamentos");
 const etiquetaObrigatoria = () => marcaMomento("etiquetaObrigatoria");
 const precisaGarantia = () => !marcaMomento("semGarantia");
+const temServicoExterno = () => !marcaMomento("semServicoExterno");
 // Obrigatória com dispensa, no primeiro contacto e só em garantia.
 const faturaObrigatoria = () => emGarantia() && marcaMomento("faturaObrigatoria");
 
@@ -2152,10 +2155,10 @@ function construirCorpo(num, momento, servico, garantia = null) {
   // não pode viajar num registo que já tem número.
   const cliente = clientePedido() ? $("cliente").value.trim() : "";
   const morada = moradaPedida() ? $("morada").value.trim() : "";
-  // Em garantia, «Serviço» é o número interno e o do fabricante vem à parte.
-  const emGar = garantia === "garantia";
-  const rotuloServico = emGar ? "Serviço interno" : "Serviço";
-  const numGarantia = emGar ? $("gar-num").value.trim() : "";
+  // Onde pode haver serviço externo, «Serviço» é o interno e o externo vem à parte.
+  const comExterno = temServicoExterno();
+  const rotuloServico = comExterno ? "Serviço interno" : "Serviço";
+  const numExterno = comExterno ? $("num-externo").value.trim() : "";
   // Só conta onde o campo existe — senão um valor antigo viajava para um
   // momento que nem o mostra.
   // Contadas pela mesma regra que decide os ficheiros anexados (partesDoRegisto),
@@ -2176,14 +2179,15 @@ function construirCorpo(num, momento, servico, garantia = null) {
     "Registo fotográfico — CATEfoto",
     "",
     num ? `${rotuloServico}: ${num}` : `${rotuloServico}: ainda sem número atribuído`,
-    ...(numGarantia ? [`Nº de garantia: ${numGarantia}`] : []),
+    ...(numExterno ? [`Serviço externo: ${numExterno}`] : []),
+    // A garantia logo a seguir aos números: é a primeira coisa que se pergunta.
+    ...(garantia ? [`Garantia: ${GARANTIA_POR_CHAVE[garantia].texto}`] : []),
     ...(cliente ? [`Cliente: ${cliente}`] : []),
     ...(morada ? [`Morada / local: ${morada}`] : []),
     ...(mostrarContacto && $("contacto").value.trim()
       ? [`Contacto: ${$("contacto").value.trim()}`] : []),
     `Momento: ${MOMENTO_POR_CHAVE[momento].texto}`,
     `Tipo de serviço: ${SERVICO_POR_CHAVE[servico].texto}`,
-    ...(garantia ? [`Garantia: ${GARANTIA_POR_CHAVE[garantia].texto}`] : []),
     `Registado por: ${$("tec").value.trim()}`,
     ...(recebido ? [`Recebido por: ${recebido}`] : []),
     `Enviado: ${dataHora(new Date())}`,
@@ -2387,7 +2391,7 @@ function recomeçar() {
   ["morada", "contacto", "pretendido"].forEach((id) => { $(id).value = ""; });
   $("obs").value = "";
   $("num").value = "";
-  $("gar-num").value = "";
+  $("num-externo").value = "";
   $("cliente").value = "";
   $("recebido").value = "";
   ["num-err", "cliente-err", "morada-err", "pretendido-err", "tec-err",
@@ -2541,9 +2545,9 @@ $("num").addEventListener("input", (e) => {
   avisarEscondidas(antes);
 });
 
-// O número de garantia pode ter letras e traços, mas, tal como o interno, não
+// O serviço externo pode ter letras e traços, mas, tal como o interno, não
 // aceita espaços: tirá-los ao escrever e ao colar evita números que não batem.
-$("gar-num").addEventListener("input", (e) => {
+$("num-externo").addEventListener("input", (e) => {
   e.target.value = e.target.value.replace(/\s/g, "");
 });
 
