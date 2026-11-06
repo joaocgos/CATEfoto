@@ -111,7 +111,10 @@ sair. O que faz é entregar as fotografias à app de email, com o texto
 preenchido — o envio tem mesmo de ser confirmado lá dentro.
 
 Por isso o botão diz *Partilhar registo* e o ecrã final diz *Falta enviar o
-email*. Nenhum dos dois promete o que a página não pode garantir.
+email*. Nenhum dos dois promete o que a página não pode garantir. O ecrã final
+traz um recibo do que ficou empacotado (`26000123 · RECOLHA · DOMESTICO · 5
+fotografias`), para o técnico confirmar o que vai enviar, e um ícone neutro: é um
+estado pendente, não um erro.
 
 Se a partilha correr mal — a app de email fechou, o rascunho perdeu-se,
 escolheu-se a app errada — o ecrã final tem **Partilhar outra vez**, que repete

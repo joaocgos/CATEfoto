@@ -35,12 +35,12 @@
 <style>
   :root {
     --red:        #E30A17;
-    --red-txt:    #E30A17;   /* vermelho para texto pequeno */
+    --red-txt:    #C51605;   /* vermelho para texto pequeno: 6:1 sobre o cartão claro */
     --red-dark:   #C51605;
     --red-soft:   rgba(227, 10, 23, 0.08);
     --ink:        #1A1A1A;
     --ink-2:      #3A3A3A;
-    --muted:      #767676;
+    --muted:      #6B6B6B;
     --line:       #E6E6E6;
     --bg:         #F7F7F8;
     --card:       #FFFFFF;
@@ -112,7 +112,7 @@
   }
   details.ajuda > summary::-webkit-details-marker { display: none; }
   details.ajuda .ajuda-t { font-size: 15px; font-weight: 700; color: var(--ink); }
-  details.ajuda .ajuda-s { font-size: 13px; font-weight: 600; color: var(--red-txt); }
+  details.ajuda .ajuda-s { font-size: 13px; font-weight: 600; color: var(--ink-2); }
   details.ajuda > summary:focus-visible { outline: 3px solid var(--red); outline-offset: -3px; border-radius: 18px; }
   details.ajuda .ajuda-s::after { content: " ▾"; }
   details.ajuda[open] .ajuda-s::after { content: " ▴"; }
@@ -130,7 +130,7 @@
     background: var(--red-soft); color: var(--ink);
   }
   .ajuda-aviso p { margin: 0; color: var(--ink); }
-  .ajuda-corpo a { color: var(--red-txt); font-weight: 600; }
+  .ajuda-corpo a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
   .ajuda-mais { margin: 22px 0 0; }
   .ajuda-mais span { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
 
@@ -181,12 +181,14 @@
   }
   input[type="text"] { height: 54px; }
   textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
-  input::placeholder, textarea::placeholder { color: var(--muted); opacity: .75; }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
   input:focus, textarea:focus {
-    outline: none;
     border-color: var(--red);
     background: var(--card);
   }
+  /* O contorno do teclado não se retira: a borda vermelha de 1,5 px sozinha é
+     um indicador de foco fraco. */
+  input:focus-visible, textarea:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   #num {
     font-size: 22px; font-weight: 700;
     letter-spacing: .16em; font-variant-numeric: tabular-nums;
@@ -212,7 +214,7 @@
   .seg:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .seg {
     display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
-    min-height: 92px; padding: 14px;
+    position: relative; min-height: 92px; padding: 14px;
     background: var(--bg);
     border: 1.5px solid var(--line);
     border-radius: var(--r-md);
@@ -225,7 +227,11 @@
   .seg-t { display: block; font-size: 15px; font-weight: 700; }
   .seg-s { display: block; margin-top: 1px; font-size: 12.5px; font-weight: 500;
            color: var(--muted); transition: color .15s; }
-  .seg[aria-pressed="true"] .seg-s { color: var(--red-txt); opacity: .8; }
+  .seg[aria-pressed="true"] .seg-s { color: var(--red-txt); }
+  .seg[aria-pressed="true"]::after {
+    content: "✓"; position: absolute; top: 10px; right: 13px;
+    font-size: 15px; font-weight: 800; color: var(--red-txt);
+  }
   .seg[aria-pressed="true"] {
     border-color: var(--red);
     background: var(--red-soft);
@@ -309,7 +315,8 @@
   /* ── Miniaturas ───────────────────────────────────────────────────────── */
   .thumbs { display: grid; gap: 10px; margin-top: 14px; }
   .thumbs.grid { grid-template-columns: repeat(3, 1fr); }
-  .thumbs.single { grid-template-columns: 1fr; }
+  /* Com as descrições ligadas: miniatura pequena com o campo ao lado. */
+  .thumbs.lista { grid-template-columns: 76px 1fr; align-items: center; gap: 10px 12px; }
   .thumbs:empty { display: none; }
 
   .thumb {
@@ -320,7 +327,7 @@
     border: 1px solid var(--line);
   }
   .thumbs.grid .thumb { aspect-ratio: 1 / 1; }
-  .thumbs.single .thumb { aspect-ratio: 16 / 10; }
+  .thumbs.lista .thumb { aspect-ratio: 1 / 1; }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .thumb .size {
@@ -331,20 +338,17 @@
     font-variant-numeric: tabular-nums;
   }
   .thumb .del {
-    position: absolute; top: 6px; right: 6px;
-    width: 30px; height: 30px; padding: 0;
+    position: absolute; top: 4px; right: 4px;
+    width: 36px; height: 36px; padding: 0;
     display: flex; align-items: center; justify-content: center;
     border: none; border-radius: 50%;
     background: rgba(0,0,0,.62); cursor: pointer;
   }
-  .thumb .del svg { width: 15px; height: 15px; stroke: #fff; }
+  .thumb .del svg { width: 16px; height: 16px; stroke: #fff; }
+  .thumb .del::after { content: ""; position: absolute; inset: -4px; }
 
   .notas-fotos-pergunta { margin: 0; }
-  input.nota-campo {
-    grid-column: 1 / -1;
-    height: 40px; margin-top: -2px;
-    font-size: 13px;
-  }
+  input.nota-campo { height: 44px; font-size: 14px; }
 
   .thumb.loading { display: flex; align-items: center; justify-content: center; }
   .spinner {
@@ -412,9 +416,18 @@
   .done-mark {
     width: 76px; height: 76px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    background: var(--red); margin-bottom: 18px;
+    background: var(--ink); margin-bottom: 18px;
   }
-  .done-mark svg { width: 36px; height: 36px; stroke: #fff; }
+  /* Entregue à app de email mas por enviar é um estado pendente, não um erro:
+     ícone neutro. Só o envio confirmado ganha a cor de sucesso. */
+  .done-mark.enviado { background: var(--ok); }
+  .done-mark svg { width: 36px; height: 36px; stroke: var(--card); }
+  #done .done-resumo {
+    margin: 12px 0 0; padding: 8px 12px; border-radius: 10px;
+    background: var(--card); border: 1px solid var(--line);
+    color: var(--ink); font-size: 13.5px; font-weight: 600;
+    font-variant-numeric: tabular-nums; max-width: 330px; overflow-wrap: anywhere;
+  }
   #done h2 { margin: 0; font-size: 23px; font-weight: 700; }
   #done p { margin: 8px 0 0; font-size: 14.5px; color: var(--muted); max-width: 330px; }
   .done-acoes {
@@ -457,16 +470,20 @@
     letter-spacing: .06em; color: var(--muted);
   }
   .passo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; }
-  .passo-alterar { flex: none; font-size: 13px; font-weight: 600; color: var(--red-txt); }
+  .passo-alterar { flex: none; font-size: 13px; font-weight: 600; color: var(--ink-2);
+                   text-decoration: underline; text-underline-offset: 3px; }
 
   /* ── Caixas das lojas, no rodapé ──────────────────────────────────────── */
   .lojas { margin: 0; }
+  /* Parece uma linha de texto, mas a área tocável tem 44 px: as margens
+     negativas devolvem o espaço, por isso o rodapé não cresce. */
   .dest-link {
-    background: none; border: none; padding: 4px 6px;
-    font: inherit; font-size: 12px; font-weight: 600;
-    color: var(--red-txt); cursor: pointer;
+    background: none; border: none; padding: 13px 8px; margin: -13px -8px;
+    font: inherit; font-size: 12.5px; font-weight: 600; line-height: 18px;
+    color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px;
+    cursor: pointer;
   }
-  .loja { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .loja { display: flex; align-items: center; gap: 10px; padding: 5px 0; min-height: 44px; }
   .loja + .loja { border-top: 1px solid var(--line); }
   .loja-nome {
     flex: none; min-width: 64px;
@@ -475,15 +492,15 @@
   .loja-end {
     flex: 1; min-width: 0;
     font-size: 13px; color: var(--ink-2);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    overflow-wrap: anywhere;
   }
   #assunto-linha { border-top: 1px solid var(--line); }
   #assunto-linha .loja-end {
     white-space: normal; overflow: visible; text-overflow: clip;
   }
   .loja-copiar {
-    flex: none; height: 34px; padding: 0 14px;
-    background: var(--card); color: var(--red);
+    flex: none; height: 44px; padding: 0 14px;
+    background: var(--card); color: var(--ink-2);
     border: 1.5px solid var(--line); border-radius: 9px;
     font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
   }
@@ -492,15 +509,20 @@
   /* ── Dispensa com registo ─────────────────────────────────────────────── */
   .dispensa { margin-top: 12px; }
   .dispensa-marca {
-    display: flex; align-items: flex-start; gap: 10px;
+    display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 0;
     font-size: 13.5px; line-height: 1.35; color: var(--ink-2); cursor: pointer;
   }
   .dispensa-marca input {
-    width: 20px; height: 20px; flex: none; margin: 1px 0 0;
+    width: 24px; height: 24px; flex: none; margin: 0;
     accent-color: var(--red);
   }
   input.dispensa-motivo { height: 44px; margin-top: 8px; font-size: 14px; }
   #num:disabled { opacity: .45; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+    .spinner { animation-duration: 1.6s; }   /* é um indicador de carga: abranda, não pára */
+  }
 </style>
 </head>
 <body>
@@ -573,7 +595,7 @@
         <div class="card-head"><h2>Tipo de serviço</h2></div>
         <p class="card-hint">A linha de negócio do trabalho.</p>
         <div class="segmented" id="servicos" role="group" aria-label="Tipo de serviço"></div>
-        <p class="err" id="srv-err">Escolhe o tipo de serviço.</p>
+        <p class="err" role="alert" id="srv-err">Escolhe o tipo de serviço.</p>
       </div>
     </section>
 
@@ -587,7 +609,7 @@
         <div class="card-head"><h2>Momento</h2></div>
         <p class="card-hint">Em que ponto do trabalho estás.</p>
         <div class="segmented" id="momentos" role="group" aria-label="Momento"></div>
-        <p class="err" id="mom-err">Escolhe o momento.</p>
+        <p class="err" role="alert" id="mom-err">Escolhe o momento.</p>
       </div>
     </section>
 
@@ -602,7 +624,7 @@
         <div class="card-head"><h2>Garantia</h2></div>
         <p class="card-hint">Se o trabalho está coberto pela garantia.</p>
         <div class="segmented" id="garantias" role="group" aria-label="Garantia"></div>
-        <p class="err" id="gar-err">Indica se está em garantia.</p>
+        <p class="err" role="alert" id="gar-err">Indica se está em garantia.</p>
       </div>
     </section>
 
@@ -616,8 +638,8 @@
       <div class="field">
         <label class="lbl" for="num" id="num-lbl">Número do serviço</label>
         <input id="num" type="text" inputmode="numeric" autocomplete="off"
-               placeholder="26000000" aria-describedby="num-err">
-        <p class="err" id="num-err">Indica o número do serviço.</p>
+               placeholder="Ex.: 26000123" aria-describedby="num-err">
+        <p class="err" role="alert" id="num-err">Indica o número do serviço.</p>
         <div id="dispensa-numero" hidden></div>
       </div>
 
@@ -625,14 +647,14 @@
         <label class="lbl" for="cliente" id="cliente-lbl">Nome do cliente</label>
         <input id="cliente" type="text" autocomplete="off"
                placeholder="Nome do cliente" aria-describedby="cliente-err">
-        <p class="err" id="cliente-err">Indica o nome do cliente.</p>
+        <p class="err" role="alert" id="cliente-err">Indica o nome do cliente.</p>
       </div>
 
       <div class="field" id="campo-morada" hidden>
         <label class="lbl" for="morada">Morada / local</label>
         <input id="morada" type="text" autocomplete="off"
                placeholder="Onde é o trabalho" aria-describedby="morada-err">
-        <p class="err" id="morada-err">Indica a morada ou o local.</p>
+        <p class="err" role="alert" id="morada-err">Indica a morada ou o local.</p>
       </div>
 
       <div class="field" id="campo-contacto" hidden>
@@ -645,7 +667,7 @@
         <label class="lbl" for="tec">Registado por</label>
         <input id="tec" type="text" autocomplete="name" placeholder="O teu nome"
                aria-describedby="tec-err">
-        <p class="err" id="tec-err">Indica o teu nome.</p>
+        <p class="err" role="alert" id="tec-err">Indica o teu nome.</p>
       </div>
 
       <div class="field" id="campo-recebido" hidden>
@@ -662,7 +684,7 @@
       <textarea id="pretendido" maxlength="600"
                 placeholder="Ex.: instalar exaustor novo na cozinha, com saída para o exterior."
                 aria-describedby="pretendido-err"></textarea>
-      <p class="err" id="pretendido-err">Escreve o que o cliente pretende.</p>
+      <p class="err" role="alert" id="pretendido-err">Escreve o que o cliente pretende.</p>
     </section>
 
     <!-- Pergunta única: só com "sim" é que cada fotografia ganha um campo de
@@ -679,7 +701,7 @@
 
     <!-- Fatura de compra: só nos registos em garantia ----------------------->
     <div id="fatura"></div>
-    <p class="err" id="fat-err">Junta a fatura, ou marca que o cliente não a tem.</p>
+    <p class="err" role="alert" id="fat-err">Junta a fatura, ou marca que o cliente não a tem.</p>
 
     <!-- Fotografias do local: nos momentos sem equipamentos ------------------>
     <div id="local"></div>
@@ -701,7 +723,7 @@
 
     <!-- Um bloco por equipamento, gerado no script ---------------------------->
     <div id="equipamentos"></div>
-    <p class="err" id="fot-err">Junta pelo menos uma fotografia.</p>
+    <p class="err" role="alert" id="fot-err">Junta pelo menos uma fotografia.</p>
 
     <!-- Observações --------------------------------------------------------->
     <section class="card">
@@ -726,8 +748,8 @@
 
   <footer>
     <div class="totals">
-      <span id="tot-count">Sem fotografias</span>
-      <span>Total <strong id="tot-size">0 KB</strong></span>
+      <span><span id="tot-count">Sem fotografias</span> · <strong id="tot-size">0 KB</strong></span>
+      <span id="destino-lojas" hidden><button type="button" class="dest-link" id="ir-lojas">Enviar para ↓</button></span>
     </div>
     <button type="button" class="send" id="send" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9"
@@ -742,9 +764,6 @@
       Registo pesado — pode ser recusado pelo email. Divide em dois.
     </p>
     <p class="dest" id="destino-unico">Destino <b id="dest-mail">a carregar…</b></p>
-    <p class="dest" id="destino-lojas" hidden>
-      <button type="button" class="dest-link" id="ir-lojas">Destino: a caixa da tua loja ↓</button>
-    </p>
   </footer>
 
 </div>
@@ -766,6 +785,7 @@
     </svg>
   </div>
   <h2 id="done-titulo">Falta enviar o email</h2>
+  <p id="done-resumo" class="done-resumo" hidden></p>
   <p id="done-msg"></p>
   <div class="done-acoes">
     <button type="button" class="again primaria" id="retry">Partilhar outra vez</button>
@@ -1340,6 +1360,9 @@ function cartaoFoto(item, eq, alvo) {
 
   if (item.estado === "a-processar") {
     div.innerHTML = '<div class="spinner"></div>';
+    // Na lista, cada miniatura tem o seu campo ao lado: sem este espaço, a
+    // seguinte ocuparia a coluna do campo.
+    if (estado.notasFotos) frag.appendChild(document.createElement("div"));
     return frag;
   }
 
@@ -1366,7 +1389,7 @@ function cartaoFoto(item, eq, alvo) {
     const campo = document.createElement("input");
     campo.type = "text";
     campo.className = "nota-campo";
-    campo.placeholder = "Descrição desta fotografia (opcional)";
+    campo.placeholder = "Descrição (opcional)";
     campo.maxLength = 140;
     campo.value = item.nota || "";
     campo.addEventListener("input", () => { item.nota = campo.value.trim(); });
@@ -1448,7 +1471,7 @@ function construirSubseccao(eq, alvo, titulo, ajuda, entradaCam, entradaGal) {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
+  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
   col.itens.forEach((f) => thumbs.appendChild(cartaoFoto(f, eq, alvo)));
 
   bloco.append(cab, dica, pickers, thumbs);
@@ -1497,7 +1520,7 @@ function desenharFolha() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
+  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
   estado.folha.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "folha")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -1618,7 +1641,7 @@ function desenharFatura() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
+  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
   estado.fatura.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "fatura")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -1666,7 +1689,7 @@ function desenharLocal() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "single" : "grid");
+  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
   estado.local.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "local")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -1872,7 +1895,7 @@ function actualizarCampoNumero() {
   $("num-lbl").textContent = obrigatorio ? "Número do serviço"
     : dispensado ? "Número do serviço (omitido)" : "Número do serviço (opcional)";
   $("num").placeholder = dispensado ? "omitido"
-    : obrigatorio ? "26000000" : "ainda sem número";
+    : obrigatorio ? "Ex.: 26000123" : "ainda sem número";
   if (!obrigatorio) marcar("num", "num-err", false);
 
   $("campo-recebido").hidden = !marcaMomento("campoRecebidoPor");
@@ -2375,6 +2398,13 @@ function concluir(tipo, titulo, mensagem) {
 
   $("done-titulo").textContent = titulo;
   $("done-msg").textContent = mensagem;
+  // O recibo: o que ficou empacotado, para o técnico poder confirmá-lo.
+  const resumo = assuntoDoRegisto();
+  const n = prontas().length;
+  $("done-resumo").textContent = resumo
+    ? `${resumo} · ${n} ${n === 1 ? "fotografia" : "fotografias"}` : "";
+  $("done-resumo").hidden = !resumo;
+  document.querySelector(".done-mark").classList.toggle("enviado", enviado);
   $("done-icon-ok").hidden = !enviado;
   $("done-icon-aviso").hidden = enviado;
 
@@ -2511,7 +2541,8 @@ function desenharLojas() {
     nome.textContent = l.nome;
     const endereco = document.createElement("span");
     endereco.className = "loja-end";
-    endereco.textContent = l.endereco;
+    // Um espaço invisível a seguir ao @ dá ao endereço onde quebrar.
+    endereco.textContent = l.endereco.replace("@", "@\u200B");
     const botao = document.createElement("button");
     botao.type = "button";
     botao.className = "loja-copiar";
