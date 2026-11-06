@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Testes CATEfoto</title>
+<style>
+  body { margin: 0; padding: 16px; font: 15px/1.5 system-ui, sans-serif; background: #fafafa; color: #1a1a1a; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  #resumo { font-weight: 700; margin: 0 0 14px; }
+  #resumo.ok { color: #14804a; } #resumo.mau { color: #c51605; }
+  ul { list-style: none; margin: 0 0 16px; padding: 0; }
+  li { padding: 3px 0; font-size: 14px; }
+  li.ok::before { content: "✓ "; color: #14804a; font-weight: 700; }
+  li.mau::before { content: "✗ "; color: #c51605; font-weight: 700; }
+  li.mau { color: #c51605; }
+  h2 { font-size: 15px; margin: 14px 0 4px; }
+  small { color: #666; }
+  iframe { width: 375px; height: 700px; border: 1px solid #ccc; background: #fff; }
+</style>
+</head>
+<body>
+<h1>Testes de ponta a ponta</h1>
+<p><small>Carrega a app numa moldura e usa-a como um técnico: carrega nos botões, junta fotografias pelo campo de ficheiros e confere o que seria partilhado. A partilha do telemóvel é substituída por uma armadilha: nada é enviado. Precisa de um servidor local, por exemplo <code>python -m http.server 8777</code>.</small></p>
+<p id="resumo">A correr…</p>
+<div id="saida"></div>
+<iframe id="app" src="index.html" title="CATEfoto"></iframe>
+
+<script>
+"use strict";
+const quadro = document.getElementById("app");
+const saida = document.getElementById("saida");
+let w, d, E;
+let certos = 0, errados = 0, lista = null;
+
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function titulo(texto) {
+  const h = document.createElement("h2");
+  h.textContent = texto;
+  saida.appendChild(h);
+  lista = document.createElement("ul");
+  saida.appendChild(lista);
+}
+function ok(nome, condicao, detalhe) {
+  const li = document.createElement("li");
+  li.className = condicao ? "ok" : "mau";
+  li.textContent = nome + (condicao || detalhe === undefined ? "" : "  →  " + JSON.stringify(detalhe));
+  lista.appendChild(li);
+  condicao ? certos++ : errados++;
+}
+
+/* ── Ajudantes: usam a app como o técnico a usa ─────────────────────────── */
+let partilha = null, ultimoCampo = null, cliqueOriginal = null;
+
+function preparar() {
+  w = quadro.contentWindow;
+  d = w.document;
+  // A CSP da app proíbe eval, mas permite scripts na própria página: injeta-se um
+  // <script> que calcula a expressão no âmbito global dela, onde vivem as constantes.
+  E = (expressao) => {
+    const s = d.createElement("script");
+    s.textContent = "window.__r = (" + expressao + ");";
+    d.head.appendChild(s);
+    s.remove();
+    return w.__r;
+  };
+  E("(memoria.ler = () => '', memoria.guardar = () => {}, 0)");
+  w.navigator.canShare = () => true;
+  w.navigator.share = async (dados) => { partilha = dados; };
+  cliqueOriginal = w.HTMLInputElement.prototype.click;
+  w.HTMLInputElement.prototype.click = function () {
+    if (this.type === "file") { ultimoCampo = this; return; }   // não abrir o seletor a sério
+    return cliqueOriginal.call(this);
+  };
+}
+
+const el = (id) => d.getElementById(id);
+function botao(caixa, texto) {
+  const b = [...el(caixa).querySelectorAll("button")].find((x) => x.textContent.includes(texto));
+  if (!b) throw new Error(`Sem botão «${texto}» em #${caixa}`);
+  return b;
+}
+function classificar(servico, momento, garantia) {
+  botao("servicos", servico).click();
+  botao("momentos", momento).click();
+  if (garantia) botao("garantias", garantia).click();
+}
+function escrever(id, valor) {
+  const c = el(id);
+  c.value = valor;
+  c.dispatchEvent(new w.Event("input", { bubbles: true }));
+}
+function bloco(tituloBloco) {
+  return [...d.querySelectorAll(".pickers")].map((p) => p.parentElement)
+    .filter((s) => !s.closest("[hidden]"))
+    .find((s) => s.textContent.trim().startsWith(tituloBloco));
+}
+async function imagem() {
+  const c = d.createElement("canvas");
+  c.width = 400; c.height = 300;
+  const x = c.getContext("2d");
+  x.fillStyle = "#c33"; x.fillRect(0, 0, 400, 300);
+  const blob = await new Promise((r) => c.toBlob(r, "image/jpeg"));
+  return new w.File([blob], "teste.jpg", { type: "image/jpeg" });
+}
+// Espera até todas as fotografias acabarem de ser comprimidas, em vez de um
+// tempo fixo: num telemóvel ou num browser lento, 1 segundo pode não chegar.
+async function esperarProntas() {
+  for (let i = 0; i < 150; i++) {
+    if (E("todosItens().every((f) => f.estado === 'pronta')")) return;
+    await esperar(100);
+  }
+}
+async function juntar(tituloBloco, vezes = 1) {
+  for (let i = 0; i < vezes; i++) {
+    [...bloco(tituloBloco).querySelectorAll("button")].find((b) => b.textContent.includes("Galeria")).click();
+    const dt = new w.DataTransfer();
+    dt.items.add(await imagem());
+    ultimoCampo.files = dt.files;
+    ultimoCampo.dispatchEvent(new w.Event("change", { bubbles: true }));
+    await esperarProntas();
+  }
+}
+async function partilhar() {
+  partilha = null;
+  el("send").click();
+  await esperar(800);
+  return partilha;
+}
+async function novo() {
+  E("recomeçar()");
+  await esperar(250);
+}
+const nomes = (p) => (p ? p.files.map((f) => f.name) : []);
+const marcaCaixa = (raiz) => raiz.querySelector(".dispensa input[type=checkbox]");
+
+/* ── Os testes ──────────────────────────────────────────────────────────── */
+async function correr() {
+  preparar();
+
+  titulo("Registo simples (Recolha, Doméstico, fora de garantia)");
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  escrever("num", "26000123"); escrever("tec", "Teste");
+  escrever("num", "26 00a1");
+  ok("O número só aceita algarismos, sem espaços nem letras", el("num").value === "26001", el("num").value);
+  escrever("num", "26000123");
+  ok("Sem fotografia não se pode partilhar", el("send").disabled);
+  await juntar("Fotografias");
+  let p = await partilhar();
+  ok("Partilhou", !!p);
+  ok("Assunto: número · momento · tipo", p && p.title === "26000123 · RECOLHA · DOMESTICO", p && p.title);
+  ok("O corpo começa pelo cabeçalho", p && p.text.startsWith("Registo fotográfico — CATEfoto"));
+  ok("Corpo: «Serviço: 26000123» (fora de garantia)", p && p.text.includes("Serviço: 26000123") && !p.text.includes("Serviço interno"));
+  ok("Corpo: sem «já enviadas»", p && !p.text.includes("já enviadas") && p.text.includes("Etiquetas: nenhuma neste registo."));
+  ok("Nome do ficheiro", nomes(p).join() === "26000123_recolha_dom_fg_01.jpg", nomes(p));
+  ok("O ecrã final dá o recibo", el("done-resumo").textContent === "26000123 · RECOLHA · DOMESTICO · 1 fotografia", el("done-resumo").textContent);
+  await novo();
+  ok("Novo registo: a classificação volta a zero", E("estado.momento === null && estado.servico === null && estado.garantia === null"));
+  ok("Novo registo: só o nome de quem regista fica", el("num").value === "" && el("tec").value === "Teste");
+
+  titulo("Limites de fotografias");
+  classificar("Ar Condicionado", "Recolha", "Em Garantia");
+  ok("Ar Condicionado em garantia: 20", E("colecao(0, 'fotos').max") === 20);
+  botao("garantias", "Fora de Garantia").click();
+  ok("Ar Condicionado fora de garantia: 10", E("colecao(0, 'fotos').max") === 10);
+  botao("servicos", "Doméstico").click(); botao("garantias", "Em Garantia").click();
+  ok("Doméstico em garantia: 10", E("colecao(0, 'fotos').max") === 10);
+  ok("Etiquetas: 2", E("colecao(0, 'etiquetas').max") === 2);
+  await novo();
+
+  titulo("Número de garantia");
+  classificar("Doméstico", "Recolha", "Em Garantia");
+  escrever("num", "26000124"); escrever("tec", "Teste");
+  ok("Aparece em garantia", !el("campo-gar-num").hidden);
+  ok("O número de cima passa a «interno»", el("num-lbl").textContent.includes("interno"), el("num-lbl").textContent);
+  escrever("gar-num", "AB 12-34");
+  ok("Aceita letras e traços, mas não espaços", el("gar-num").value === "AB12-34", el("gar-num").value);
+  await juntar("Fotografias");
+  p = await partilhar();
+  ok("Sem fatura nem omissão, não parte", !p);
+  marcaCaixa(el("fatura")).click();
+  p = await partilhar();
+  ok("Com a omissão da fatura, parte", !!p);
+  ok("Corpo: «Serviço interno» e «Nº de garantia»", p && p.text.includes("Serviço interno: 26000124") && p.text.includes("Nº de garantia: AB12-34"), p && p.text.slice(0, 200));
+  ok("O assunto não leva o número de garantia", p && p.title === "26000124 · RECOLHA · DOMESTICO", p && p.title);
+  ok("Os ficheiros levam o número interno", nomes(p).every((n) => n.startsWith("26000124_")), nomes(p));
+  await novo();
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  ok("Fora de garantia o campo não aparece", el("campo-gar-num").hidden);
+  await novo();
+
+  titulo("Omitir o número (Recolha)");
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  escrever("tec", "Teste");
+  await juntar("Fotografias");
+  marcaCaixa(el("dispensa-numero")).click();
+  ok("O número fica vazio e bloqueado", el("num").disabled && el("num").value === "");
+  p = await partilhar();
+  ok("Sem cliente nem morada não parte", !p);
+  escrever("cliente", "Maria Teste"); escrever("morada", "Rua das Flores 12");
+  p = await partilhar();
+  ok("Com cliente e morada parte", !!p);
+  ok("Assunto pelo cliente", p && p.title === "Maria Teste · RECOLHA · DOMESTICO", p && p.title);
+  ok("Corpo lista a omissão", p && p.text.includes("Omitido por decisão de quem regista:") && p.text.includes("Número do serviço"));
+  await novo();
+
+  titulo("Entrada Oficina (etiqueta obrigatória)");
+  classificar("Doméstico", "Entrada Oficina", "Fora de Garantia");
+  escrever("num", "26000125"); escrever("tec", "Teste");
+  await juntar("Fotografias");
+  p = await partilhar();
+  ok("Sem etiqueta não parte", !p);
+  marcaCaixa(bloco("Etiquetas")).click();
+  p = await partilhar();
+  ok("Com a chapa omitida parte", !!p);
+  ok("Corpo lista a etiqueta omitida", p && p.text.includes("Etiqueta do equipamento"));
+  await novo();
+
+  titulo("Vários equipamentos");
+  classificar("Doméstico", "Entrega", "Fora de Garantia");
+  escrever("num", "26000126"); escrever("tec", "Teste");
+  el("eq-mais").click();
+  await esperar(150);
+  await juntar("Fotografias");
+  ok("Com um equipamento sem fotografias não parte", !(await partilhar()));
+  const segundo = [...d.querySelectorAll(".pickers")].map((x) => x.parentElement).filter((s) => s.textContent.trim().startsWith("Fotografias"))[1];
+  [...segundo.querySelectorAll("button")].find((b) => b.textContent.includes("Galeria")).click();
+  const dt = new w.DataTransfer(); dt.items.add(await imagem()); ultimoCampo.files = dt.files;
+  ultimoCampo.dispatchEvent(new w.Event("change", { bubbles: true }));
+  await esperarProntas();
+  E("estado.equipamentos.forEach((e) => e.fotos.forEach((f) => { if (!f.capturada) f.capturada = new Date(); }))");
+  p = await partilhar();
+  ok("Parte com as fotografias dos dois", !!p);
+  ok("Ficheiros com eq1 e eq2", p && p.files.some((f) => f.name.includes("_eq1_")) && p.files.some((f) => f.name.includes("_eq2_")), nomes(p));
+  ok("O corpo separa os equipamentos", p && p.text.includes(" Equipamento 1:") && p.text.includes(" Equipamento 2:"), p && p.text.split("\n").filter((l) => l.includes("Equipamento")));
+  await novo();
+
+  titulo("Orçamento");
+  classificar("Hotelaria", "Orçamento");
+  escrever("tec", "Teste");
+  ok("Sem garantia nem equipamentos", el("card-equipamentos").hidden && el("garantias").closest(".passo").hidden);
+  await juntar("Fotografias do local");
+  p = await partilhar();
+  ok("Sem cliente, morada e pedido não parte", !p);
+  escrever("cliente", "Hotel Teste"); escrever("morada", "Av. Central 1"); escrever("pretendido", "Trocar três máquinas");
+  p = await partilhar();
+  ok("Com os dados parte", !!p);
+  ok("Ficheiro do local, sem equipamento nem garantia", nomes(p).length === 1 && /_orcamento_hot_01\.jpg$/.test(nomes(p)[0]), nomes(p));
+  await novo();
+
+  titulo("O que fica escondido não é enviado");
+  classificar("Doméstico", "Entrega", "Em Garantia");
+  escrever("num", "26000127"); escrever("tec", "Teste");
+  await juntar("Fotografias");
+  await juntar("Fatura");
+  botao("garantias", "Fora de Garantia").click();
+  p = await partilhar();
+  ok("A fatura escondida não segue", p && p.files.every((f) => !f.name.includes("fatura")), nomes(p));
+  await novo();
+
+  titulo("Descrição por fotografia");
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  escrever("num", "26000128"); escrever("tec", "Teste");
+  await juntar("Fotografias");
+  ok("Por omissão não há campos", d.querySelectorAll(".nota-campo").length === 0);
+  el("notas-fotos").click();
+  await esperar(250);
+  const campo = d.querySelector(".nota-campo");
+  campo.focus(); campo.value = "risco na porta"; campo.dispatchEvent(new w.Event("input", { bubbles: true }));
+  await juntar("Fotografias");           // o redesenho não pode tirar o foco do campo
+  const ativo = d.activeElement;
+  ok("Escrever não perde o foco quando outra fotografia acaba", ativo && ativo.classList.contains("nota-campo") && ativo.dataset.foto === campo.dataset.foto, ativo && ativo.tagName);
+  E("estado.equipamentos[0].fotos.forEach((f) => { if (!f.capturada) f.capturada = new Date(); })");
+  p = await partilhar();
+  ok("A descrição vai junto da hora da fotografia", p && /· 01 — .* — "risco na porta"/.test(p.text), p && p.text.split("\n").filter((l) => l.includes("·")));
+  ok("A fotografia sem descrição não leva aspas", p && !p.text.includes('— ""'));
+  el("notas-fotos").click();
+  await esperar(250);
+  ok("Desligar a pergunta apaga as descrições", E("estado.equipamentos[0].fotos.every((f) => !f.nota)"));
+  await novo();
+
+  titulo("Hora da fotografia (EXIF)");
+  const exif = Uint8Array.from([
+    0xFF,0xD8, 0xFF,0xE1,0x00,0x48, 0x45,0x78,0x69,0x66,0x00,0x00,
+    0x4D,0x4D,0x00,0x2A,0x00,0x00,0x00,0x08,
+    0x00,0x01, 0x87,0x69,0x00,0x04,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x1A, 0x00,0x00,0x00,0x00,
+    0x00,0x01, 0x90,0x03,0x00,0x02,0x00,0x00,0x00,0x14,0x00,0x00,0x00,0x2C, 0x00,0x00,0x00,0x00,
+    ...[..."2026:09:10 10:03:00"].map((c) => c.charCodeAt(0)), 0x00,
+    0xFF,0xDA, 0,0,0,0,0,0,
+  ]);
+  const data = w.extrairDataExif(exif.buffer);
+  ok("Lê a hora de uma fotografia com EXIF", data && data.getFullYear() === 2026 && data.getMonth() === 8 && data.getDate() === 10 && data.getHours() === 10 && data.getMinutes() === 3, data && String(data));
+  const lixo = [new Uint8Array(0), Uint8Array.from([0xFF,0xD8,0xFF,0xE1,0xFF,0xFF,0x45,0x78,0x69,0x66,0,0,0x4D,0x4D,0,0x2A]), Uint8Array.from({ length: 64 }, (_, i) => (i * 37) % 256)];
+  let estragou = false;
+  for (const l of lixo) {
+    const r = await w.dataOriginal(new w.File([l], "x.jpg"));
+    if (r !== null) estragou = true;
+  }
+  ok("Ficheiros estragados dão «sem hora», sem rebentar", !estragou);
+
+  w.HTMLInputElement.prototype.click = cliqueOriginal;
+}
+
+async function iniciar() {
+  try {
+    await esperar(500);
+    await correr();
+  } catch (erro) {
+    errados++;
+    const li = document.createElement("li");
+    li.className = "mau";
+    li.textContent = "O teste parou: " + erro.message;
+    (lista || saida).appendChild(li);
+  }
+  const resumo = document.getElementById("resumo");
+  resumo.textContent = errados ? `${errados} falhas, ${certos} certos` : `Tudo certo: ${certos} verificações`;
+  resumo.className = errados ? "mau" : "ok";
+  document.title = (errados ? "FALHAS · " : "OK · ") + "Testes CATEfoto";
+}
+
+// A moldura pode já ter acabado de carregar quando este script corre (cache):
+// começa logo se for o caso, e senão espera pelo carregamento.
+const jaCarregou = quadro.contentWindow.location.pathname.endsWith("index.html")
+  && quadro.contentDocument.readyState === "complete";
+if (jaCarregou) iniciar(); else quadro.addEventListener("load", iniciar, { once: true });
+</script>
+</body>
+</html>

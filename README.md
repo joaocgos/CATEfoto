@@ -25,6 +25,7 @@ e se usa por si.
 | `icon-192.png`, `icon-512.png` | Ícones do ecrã principal do telemóvel |
 | `manifest.webmanifest` | Faz com que abra em ecrã inteiro, sem barra do browser |
 | `manual.html` | Manual completo, aberto pela ligação no fim do cartão **Como usar** do ecrã inicial |
+| `teste.html` | Testes de ponta a ponta, que se abrem num browser (ver *Testar*) |
 
 Os ficheiros têm de ficar na **mesma pasta**.
 
@@ -164,6 +165,17 @@ ficheiros saem como `26000123_recolha_dom_gar_fatura_01.jpg`.
 No primeiro contacto é obrigatória com dispensa ("O cliente não tem a fatura");
 na Entrega é opcional (ver `faturaObrigatoria`).
 
+### Número de garantia
+
+Nos registos **em garantia** há dois números: o do serviço interno e o do processo
+no fabricante. O campo **Número do serviço** passa a dizer «interno» (continua só
+com algarismos) e aparece **Número de garantia (opcional)**, até 40 caracteres, sem
+espaços (tira-os ao escrever e ao colar), para o do fabricante, que pode ter
+letras e traços. Nunca é
+obrigatório e não tem caixa de omissão. Vai só no corpo do email
+(`Nº de garantia: …`); o assunto e os nomes dos ficheiros levam o número interno.
+O corpo diz «Serviço interno: …» em vez de «Serviço: …» para não haver dúvidas.
+
 ### Dispensa com registo
 
 Três coisas podem ser obrigatórias e, ainda assim, faltar por boas razões: o
@@ -221,15 +233,16 @@ partilhar, um bloco vazio no meio dos outros é assinalado pelo nome
 Cabem várias por equipamento — há máquinas com mais do que uma chapa, e às
 vezes é preciso repetir uma que saiu tremida.
 
-Se o serviço já tiver levado etiquetas noutro registo, aparece um aviso a
-dizer em qual e quando. É só informação: não desaconselha repetir, porque uma
+Se o serviço já tiver tido etiquetas partilhadas noutro registo, aparece um
+aviso a dizer em qual e quando. É só informação: não desaconselha repetir, porque uma
 etiqueta a mais nunca fez mal e uma a menos obriga a voltar ao equipamento.
 Esse aviso vive no telemóvel de quem as enviou, por isso outro técnico não o vê.
 
 Quando um registo segue sem etiquetas, o email leva sempre uma linha a dizer
-porquê — `Etiquetas: nenhuma neste registo — já enviadas no registo de Recolha
-(07/09/2026 14:02).` ou `Etiquetas: nenhuma neste registo.` — para quem arquiva
-distinguir uma omissão deliberada de um esquecimento.
+porquê — `Etiquetas: nenhuma neste registo.` — para quem arquiva distinguir uma
+omissão deliberada de um esquecimento. A linha nunca diz que as etiquetas «já
+foram enviadas» noutro registo: a app só sabe que foram *partilhadas*, não que o
+email saiu.
 
 ### Sem rede em casa do cliente
 
@@ -259,10 +272,8 @@ const CONFIG = {
     foto:  { lado: 1600, qualidade: 0.78 },  // equipamento, local
   },
   LOJAS: [            // caixas das lojas (ver abaixo)
-    { nome: "Famalicão", caixa: "fotos.famalicao", dominio: "cate.com.pt" },
-    { nome: "Porto",     caixa: "fotos.porto",     dominio: "cate.com.pt" },
+    // { nome: "Loja", caixa: "fotos.loja", dominio: "exemplo.pt" },
   ],
-  ENDPOINT: null,
 };
 ```
 
@@ -395,23 +406,32 @@ botão Câmara em regra não ficam na galeria.
 
 ---
 
-## Envio automático (para mais tarde, se fizer falta)
+## Testar
 
-Neste momento o técnico tem de escolher a app de email no menu de partilha e
-confirmar o envio lá dentro. Não é envio automático a sério, e a página não
-consegue saber se a mensagem chegou a sair.
+`teste.html` carrega a app numa moldura, carrega nos botões como um técnico e
+confere o assunto, o corpo do email, os ficheiros, os limites, as omissões e o
+«Novo registo». Precisa de um servidor local (a moldura não abre a partir de
+`file://`):
 
-Para eliminar esse passo é preciso um endpoint que receba as fotografias e as
-reencaminhe por email. Basta apontar `CONFIG.ENDPOINT` para o seu URL e o botão
-passa a enviar sozinho — o resto da página já está preparado. O endpoint recebe
-um `multipart/form-data` com os campos `para`, `assunto`, `corpo`, `numero`,
-`momento`, `tipo`, `garantia` (só quando se aplica) e as imagens em `fotos`.
+    python -m http.server 8777
 
-Nesse modo o ecrã final passa a dizer *Registo enviado*, porque aí a resposta
-do servidor é confirmação a sério.
+e depois abrir `http://localhost:8777/teste.html`. Corre sem tocar em nada: só
+substitui a partilha do telemóvel por uma armadilha que guarda o que seria
+enviado. Convém abri-lo antes de cada publicação.
 
-Só vale a pena se a fricção se revelar um incómodo real: obriga a uma conta de
-serviço de email e a uma chave guardada no servidor.
+---
+
+## Porque é que não envia sozinho
+
+A página não consegue enviar um email nem saber se ele chegou a sair, e a
+política de segurança (CSP) proíbe de propósito ligações a servidores: mesmo que
+entrasse código indesejado, não conseguiria mandar as fotografias nem os dados
+para lado nenhum. Já existiu uma opção de envio automático, mas nunca funcionou
+por causa dessa mesma política, e foi retirada.
+
+Se um dia fizer falta, seria um projeto à parte: um servidor que receba as
+fotografias e as reencaminhe, uma conta de serviço de email, uma chave guardada
+no servidor e o `connect-src` da CSP aberto só para esse endereço.
 
 ---
 

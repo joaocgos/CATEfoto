@@ -13,9 +13,6 @@
   pode fechar-se quase tudo. O que isto garante na prática: mesmo que alguma vez
   entre código indesejado na página, ele não consegue enviar as fotografias nem
   os dados para lado nenhum, porque connect-src fica bloqueado por omissão.
-
-  Se algum dia se ativar o CONFIG.ENDPOINT, é preciso acrescentar aqui
-  "connect-src https://o-teu-endpoint;" — senão o envio é bloqueado em silêncio.
 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
@@ -93,7 +90,6 @@
     padding: 14px 20px;
   }
   .header-in img { height: 26px; width: auto; display: block; }
-  .marca { font-size: 21px; font-weight: 800; letter-spacing: .04em; color: var(--red-txt); }
   /* align-self: stretch faz o separador acompanhar a altura do bloco de
      titulo, que agora tem duas linhas. */
   .header-sep { width: 1px; align-self: stretch; background: var(--line); }
@@ -419,8 +415,7 @@
     background: var(--ink); margin-bottom: 18px;
   }
   /* Entregue à app de email mas por enviar é um estado pendente, não um erro:
-     ícone neutro. Só o envio confirmado ganha a cor de sucesso. */
-  .done-mark.enviado { background: var(--ok); }
+     ícone neutro. */
   .done-mark svg { width: 36px; height: 36px; stroke: var(--card); }
   #done .done-resumo {
     margin: 12px 0 0; padding: 8px 12px; border-radius: 10px;
@@ -537,7 +532,6 @@
         <source srcset="logo-dark.png" media="(prefers-color-scheme: dark)">
         <img src="logo.png" alt="CATE" id="logo">
       </picture>
-      <span class="marca" hidden>CATE</span>
       <div class="header-sep"></div>
       <div class="titulo">
         <h1>CATEfoto</h1>
@@ -641,6 +635,15 @@
                placeholder="Ex.: 26000123" aria-describedby="num-err">
         <p class="err" role="alert" id="num-err">Indica o número do serviço.</p>
         <div id="dispensa-numero" hidden></div>
+      </div>
+
+      <!-- O número do processo no fabricante. O interno (acima) é sempre só
+           algarismos; este pode ter letras e traços. Nenhum aceita espaços, e este
+           nunca é obrigatório. -->
+      <div class="field" id="campo-gar-num" hidden>
+        <label class="lbl" for="gar-num">Número de garantia (opcional)</label>
+        <input id="gar-num" type="text" autocomplete="off" maxlength="40"
+               placeholder="O do fabricante, sem espaços">
       </div>
 
       <div class="field" id="campo-cliente" hidden>
@@ -773,15 +776,10 @@
 <div id="done">
   <div class="done-mark">
     <!-- Entregue à app de email, mas ainda por enviar -->
-    <svg id="done-icon-aviso" viewBox="0 0 24 24" fill="none" stroke-width="1.9"
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.9"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="2.5" y="5" width="19" height="14" rx="2.4"/>
       <path d="m3 7 9 6 9-6"/>
-    </svg>
-    <!-- Enviado mesmo (só no modo de envio automático) -->
-    <svg id="done-icon-ok" viewBox="0 0 24 24" fill="none" stroke-width="2.6"
-         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-      <path d="m4 12.5 5.5 5.5L20 7"/>
     </svg>
   </div>
   <h2 id="done-titulo">Falta enviar o email</h2>
@@ -868,10 +866,6 @@ const CONFIG = {
     foto:  { lado: 1600, qualidade: 0.78 },
   },
 
-  // Envio automático (futuro). Enquanto for null, a página usa a partilha
-  // nativa do telemóvel. Ao apontar para um endpoint que reencaminhe por
-  // email, o botão passa a enviar sozinho, sem escolher a app.
-  ENDPOINT: null,
 };
 
 const EMAIL_DESTINO = CONFIG.EMAIL_CAIXA + String.fromCharCode(64) + CONFIG.EMAIL_DOMINIO;
@@ -1045,7 +1039,6 @@ let pedido = { eq: 0, alvo: "fotos" };
 // passo ainda por responder.
 let editando = null;
 let seqId = 0;
-let concluidoOk = false;   // só true quando houve confirmação real de envio
 
 const $ = (id) => document.getElementById(id);
 
@@ -1257,14 +1250,19 @@ function avisarEscondidas(antes) {
 // "fora de garantia" — não conta nem é enviada: ia no email algo que o técnico
 // já não vê, e com nomes de ficheiro repetidos. todosItens() continua a dar
 // tudo, para a limpeza no registo novo.
-function colecoesAtivas() {
-  const c = [];
-  if (haServico()) c.push(estado.folha);
-  if (emGarantia()) c.push(estado.fatura);
-  if (semEquipamentos()) c.push(estado.local);
-  else estado.equipamentos.forEach((e) => c.push(e.etiquetas, e.fotos));
-  return c;
+function partesDoRegisto() {
+  const p = [];
+  if (haServico()) p.push({ itens: estado.folha, rotulo: "folha_", eq: null });
+  if (emGarantia()) p.push({ itens: estado.fatura, rotulo: "fatura_", eq: null });
+  if (semEquipamentos()) p.push({ itens: estado.local, rotulo: "", eq: null });
+  else estado.equipamentos.forEach((e, eq) => {
+    p.push({ itens: e.etiquetas, rotulo: "etiqueta_", eq });
+    p.push({ itens: e.fotos, rotulo: "", eq });
+  });
+  return p;
 }
+
+const colecoesAtivas = () => partesDoRegisto().map((p) => p.itens);
 
 // Só as que contam e já acabaram de comprimir — as outras ainda não têm blob.
 function prontas() {
@@ -1389,6 +1387,7 @@ function cartaoFoto(item, eq, alvo) {
     const campo = document.createElement("input");
     campo.type = "text";
     campo.className = "nota-campo";
+    campo.dataset.foto = item.id;
     campo.placeholder = "Descrição (opcional)";
     campo.maxLength = 140;
     campo.value = item.nota || "";
@@ -1411,7 +1410,7 @@ function actualizarCartaoEtiqueta() {
   const jaTem = estado.equipamentos.some((e) => e.etiquetas.length);
   if (anterior && !jaTem) {
     $("etq-nota-txt").textContent =
-      `Este serviço já levou etiquetas num registo de ${anterior.tipoNome}, ` +
+      `Este serviço já teve etiquetas partilhadas num registo de ${anterior.tipoNome}, ` +
       `a ${dataCurta(anterior.data)}.`;
     nota.hidden = false;
   } else {
@@ -1769,7 +1768,32 @@ function desenharEquipamentos() {
   });
 }
 
+// Redesenhar substitui os campos de texto. Sem este cuidado, quem estava a
+// escrever uma descrição perdia o foco (e o teclado) de cada vez que outra
+// fotografia acabava de processar.
 function desenhar() {
+  const a = document.activeElement;
+  let foco = null;
+  if (a && a.matches && a.matches(".nota-campo, .dispensa-motivo")) {
+    const nota = a.classList.contains("nota-campo");
+    foco = {
+      nota,
+      chave: nota ? a.dataset.foto : [...document.querySelectorAll(".dispensa-motivo")].indexOf(a),
+      ini: a.selectionStart, fim: a.selectionEnd,
+    };
+  }
+  redesenhar();
+  if (!foco) return;
+  const novo = foco.nota
+    ? document.querySelector(`.nota-campo[data-foto="${foco.chave}"]`)
+    : document.querySelectorAll(".dispensa-motivo")[foco.chave];
+  if (novo) {
+    novo.focus({ preventScroll: true });
+    try { novo.setSelectionRange(foco.ini, foco.fim); } catch (_) { /* sem selecção */ }
+  }
+}
+
+function redesenhar() {
   actualizarAssunto();
   desenharFolha();
   desenharFatura();
@@ -1892,8 +1916,11 @@ function actualizarCampoNumero() {
       : "Apenas dígitos, sem espaços.";
   const obrigatorio = numeroObrigatorio();
   const dispensado = numeroDispensado();
-  $("num-lbl").textContent = obrigatorio ? "Número do serviço"
-    : dispensado ? "Número do serviço (omitido)" : "Número do serviço (opcional)";
+  // Em garantia há dois números: este é o interno, e o do fabricante tem campo próprio.
+  const interno = emGarantia() ? " interno" : "";
+  $("num-lbl").textContent = obrigatorio ? `Número do serviço${interno}`
+    : dispensado ? `Número do serviço${interno} (omitido)` : `Número do serviço${interno} (opcional)`;
+  $("campo-gar-num").hidden = !emGarantia();
   $("num").placeholder = dispensado ? "omitido"
     : obrigatorio ? "Ex.: 26000123" : "ainda sem número";
   if (!obrigatorio) marcar("num", "num-err", false);
@@ -2105,44 +2132,14 @@ function construirFicheiros(num, momento, servico, garantia = null) {
   const garCurta = garantia ? ((GARANTIA_POR_CHAVE[garantia] || {}).curta || garantia) : "";
   const base = `${inicio}${momento}_${tipoCurto}_${garCurta ? garCurta + "_" : ""}`;
 
-  // Só vão as colecções que o técnico está a ver — ver colecoesAtivas().
-  const semEq = !!(MOMENTO_POR_CHAVE[momento] || {}).semEquipamentos;
-  const nome = (eq, sufixo) =>
-    `${base}${varios ? "eq" + (eq + 1) + "_" : ""}${sufixo}.jpg`;
-
-  // A folha é do serviço, não de um equipamento: nunca leva o prefixo "eq".
-  if (num) {
-    estado.folha.filter((f) => f.estado === "pronta").forEach((f, i) => {
-      ficheiros.push(new File([f.blob], `${base}folha_${doisDig(i + 1)}.jpg`,
+  // Só vão as partes que o técnico está a ver — ver partesDoRegisto(), que é
+  // também o que o corpo do email usa: uma só regra para os dois.
+  partesDoRegisto().forEach(({ itens, rotulo, eq }) => {
+    const prefixoEq = eq !== null && varios ? `eq${eq + 1}_` : "";
+    itens.filter((f) => f.estado === "pronta").forEach((f, i) => {
+      ficheiros.push(new File([f.blob], `${base}${prefixoEq}${rotulo}${doisDig(i + 1)}.jpg`,
                               { type: "image/jpeg" }));
     });
-  }
-
-  // A fatura também é do serviço: sem prefixo "eq".
-  if (garantia === "garantia") {
-    estado.fatura.filter((f) => f.estado === "pronta").forEach((f, i) => {
-      ficheiros.push(new File([f.blob], `${base}fatura_${doisDig(i + 1)}.jpg`,
-                              { type: "image/jpeg" }));
-    });
-  }
-
-  // Fotografias do local: também não pertencem a equipamento nenhum.
-  if (semEq) {
-    estado.local.filter((f) => f.estado === "pronta").forEach((f, i) => {
-      ficheiros.push(new File([f.blob], `${base}${doisDig(i + 1)}.jpg`,
-                              { type: "image/jpeg" }));
-    });
-  }
-
-  (semEq ? [] : estado.equipamentos).forEach((equipamento, eq) => {
-    const juntar = (itens, prefixo) => {
-      itens.filter((f) => f.estado === "pronta").forEach((f, i) => {
-        ficheiros.push(new File([f.blob], nome(eq, prefixo + doisDig(i + 1)),
-                                { type: "image/jpeg" }));
-      });
-    };
-    juntar(equipamento.etiquetas, "etiqueta_");
-    juntar(equipamento.fotos, "");
   });
   return ficheiros;
 }
@@ -2155,6 +2152,10 @@ function construirCorpo(num, momento, servico, garantia = null) {
   // não pode viajar num registo que já tem número.
   const cliente = clientePedido() ? $("cliente").value.trim() : "";
   const morada = moradaPedida() ? $("morada").value.trim() : "";
+  // Em garantia, «Serviço» é o número interno e o do fabricante vem à parte.
+  const emGar = garantia === "garantia";
+  const rotuloServico = emGar ? "Serviço interno" : "Serviço";
+  const numGarantia = emGar ? $("gar-num").value.trim() : "";
   // Só conta onde o campo existe — senão um valor antigo viajava para um
   // momento que nem o mostra.
   const nFolha = num ? estado.folha.filter((f) => f.estado === "pronta").length : 0;
@@ -2171,7 +2172,8 @@ function construirCorpo(num, momento, servico, garantia = null) {
   const linhas = [
     "Registo fotográfico — CATEfoto",
     "",
-    num ? `Serviço: ${num}` : "Serviço: ainda sem número atribuído",
+    num ? `${rotuloServico}: ${num}` : `${rotuloServico}: ainda sem número atribuído`,
+    ...(numGarantia ? [`Nº de garantia: ${numGarantia}`] : []),
     ...(cliente ? [`Cliente: ${cliente}`] : []),
     ...(morada ? [`Morada / local: ${morada}`] : []),
     ...(mostrarContacto && $("contacto").value.trim()
@@ -2198,11 +2200,10 @@ function construirCorpo(num, momento, servico, garantia = null) {
   // faltam seria falar de uma coisa que não existe neste tipo de registo.
   if (!algumaEtiqueta && !semEquipamentos()
       && !estado.equipamentos.some((e) => e.dispensaEtiqueta.marcada)) {
-    const anterior = etiquetaJaEnviada(num);
-    linhas.push(anterior
-      ? `Etiquetas: nenhuma neste registo — já enviadas no registo de ` +
-        `${anterior.tipoNome} (${dataHora(anterior.data)}).`
-      : "Etiquetas: nenhuma neste registo.");
+    // Só se diz o que é certo. A app sabe que as etiquetas foram PARTILHADAS
+    // noutro registo, não que o email saiu: afirmar «já enviadas» pôs uma
+    // prova falsa no arquivo sempre que o email ficou por enviar.
+    linhas.push("Etiquetas: nenhuma neste registo.");
   }
 
   // Omissões assumidas por quem regista: ficam escritas, com o motivo quando
@@ -2231,40 +2232,22 @@ function construirCorpo(num, momento, servico, garantia = null) {
                 ...omitidos.map((t) => "  · " + t));
   }
 
+  // A hora a que cada fotografia foi tirada, na mesma ordem e com a mesma
+  // numeração dos ficheiros anexados. Sem equipamento (folha, fatura, local)
+  // vêm primeiro; com vários equipamentos, cada um tem o seu título.
+  const porGrupo = new Map();
+  partesDoRegisto().forEach(({ itens, rotulo, eq }) => {
+    itens.filter((f) => f.estado === "pronta").forEach((f, i) => {
+      if (!f.capturada) return;
+      const l = porGrupo.get(eq) || [];
+      l.push(`  · ${rotulo.replace("_", " ")}${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
+      porGrupo.set(eq, l);
+    });
+  });
   const capturas = [];
-  const varios = estado.equipamentos.length > 1;
-
-  (num ? estado.folha : []).forEach((f, i) => {
-    if (f.capturada) {
-      capturas.push(`  · folha ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
-    }
-  });
-  (garantia === "garantia" ? estado.fatura : []).forEach((f, i) => {
-    if (f.capturada) {
-      capturas.push(`  · fatura ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
-    }
-  });
-  (mom.semEquipamentos ? estado.local : []).forEach((f, i) => {
-    if (f.capturada) {
-      capturas.push(`  · ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
-    }
-  });
-
-  (mom.semEquipamentos ? [] : estado.equipamentos).forEach((equipamento, eq) => {
-    const linhas_eq = [];
-    equipamento.etiquetas.forEach((f, i) => {
-      if (f.capturada) {
-        linhas_eq.push(`  · etiqueta ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
-      }
-    });
-    equipamento.fotos.forEach((f, i) => {
-      if (f.capturada) {
-        linhas_eq.push(`  · ${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
-      }
-    });
-    if (!linhas_eq.length) return;
-    if (varios) capturas.push(` Equipamento ${eq + 1}:`);
-    capturas.push(...linhas_eq);
+  porGrupo.forEach((l, eq) => {
+    if (eq !== null && estado.equipamentos.length > 1) capturas.push(` Equipamento ${eq + 1}:`);
+    capturas.push(...l);
   });
   if (capturas.length) {
     linhas.push("", "Tiradas em:", ...capturas);
@@ -2316,14 +2299,6 @@ async function enviar() {
 
   $("send").disabled = true;
   try {
-    if (CONFIG.ENDPOINT) {
-      await enviarPorEndpoint(ficheiros, assunto, corpo, num, momento, servico, garantia);
-      if (num && temEtiquetas) marcarEtiquetaEnviada(num, momento);
-      concluir("ok", "Registo enviado",
-               "O registo chegou a " + EMAIL_DESTINO + ".");
-      return;
-    }
-
     if (navigator.canShare && navigator.canShare({ files: ficheiros })) {
       // O `title` é o assunto. Nem todas as apps de email o usam, mas o Gmail
       // no Android — que é o que os técnicos usam — preenche-o. Para quando
@@ -2331,7 +2306,7 @@ async function enviar() {
       // "Enviar para" mostra o assunto com botão de copiar.
       await navigator.share({ files: ficheiros, title: assunto, text: corpo });
       if (num && temEtiquetas) marcarEtiquetaEnviada(num, momento);
-      concluir("aviso", "Falta enviar o email",
+      concluir("Falta enviar o email",
                "A partilha só entregou as fotografias à app de email. " +
                "Abre-a e carrega em enviar — só aí o registo chega " +
                destinoDescrito() + ".");
@@ -2346,23 +2321,6 @@ async function enviar() {
   } finally {
     desenhar();
   }
-}
-
-async function enviarPorEndpoint(ficheiros, assunto, corpo, num, momento, servico, garantia) {
-  const dados = new FormData();
-  dados.append("para", EMAIL_DESTINO);
-  dados.append("assunto", assunto);
-  dados.append("corpo", corpo);
-  // Cada dado no seu campo. Antes, o número e o tipo iam ambos em "servico",
-  // e um servidor lia um e perdia o outro.
-  dados.append("numero", num);
-  dados.append("momento", momento);
-  dados.append("tipo", servico);
-  if (garantia) dados.append("garantia", garantia);
-  ficheiros.forEach((f) => dados.append("fotos", f, f.name));
-
-  const resposta = await fetch(CONFIG.ENDPOINT, { method: "POST", body: dados });
-  if (!resposta.ok) throw new Error("o servidor respondeu " + resposta.status);
 }
 
 // Telemóveis sem partilha de ficheiros: descarrega as fotografias já
@@ -2382,7 +2340,7 @@ function reserva(ficheiros, assunto, corpo) {
 
   // O ecrã final tem de ficar ativo ANTES do mailto: senão o aviso de
   // "sair da página" dispara por cima da abertura da app de email.
-  concluir("aviso", "Falta enviar o email",
+  concluir("Falta enviar o email",
            "As fotografias foram descarregadas para o telemóvel. Anexa-as ao " +
            "email que se abriu e carrega em enviar.");
 
@@ -2392,10 +2350,7 @@ function reserva(ficheiros, assunto, corpo) {
     `?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
 }
 
-function concluir(tipo, titulo, mensagem) {
-  const enviado = tipo === "ok";
-  concluidoOk = enviado;
-
+function concluir(titulo, mensagem) {
   $("done-titulo").textContent = titulo;
   $("done-msg").textContent = mensagem;
   // O recibo: o que ficou empacotado, para o técnico poder confirmá-lo.
@@ -2404,16 +2359,9 @@ function concluir(tipo, titulo, mensagem) {
   $("done-resumo").textContent = resumo
     ? `${resumo} · ${n} ${n === 1 ? "fotografia" : "fotografias"}` : "";
   $("done-resumo").hidden = !resumo;
-  document.querySelector(".done-mark").classList.toggle("enviado", enviado);
-  $("done-icon-ok").hidden = !enviado;
-  $("done-icon-aviso").hidden = enviado;
-
   // Partilhar não é garantia de envio: a app de email pode ter fechado, o
-  // rascunho pode ter-se perdido, pode ter-se escolhido a app errada. Enquanto
-  // não houver confirmação, tem de haver caminho de volta.
-  $("retry").hidden = enviado;
-  $("done-rodape").hidden = enviado;
-
+  // rascunho pode ter-se perdido, pode ter-se escolhido a app errada. A página
+  // nunca sabe se o email saiu, por isso o caminho de volta está sempre lá.
   $("done").classList.add("show");
 }
 
@@ -2436,6 +2384,7 @@ function recomeçar() {
   ["morada", "contacto", "pretendido"].forEach((id) => { $(id).value = ""; });
   $("obs").value = "";
   $("num").value = "";
+  $("gar-num").value = "";
   $("cliente").value = "";
   $("recebido").value = "";
   ["num-err", "cliente-err", "morada-err", "pretendido-err", "tec-err",
@@ -2453,7 +2402,6 @@ function recomeçar() {
     .forEach((b) => b.setAttribute("aria-pressed", "false"));
   actualizarCampoNumero();
   $("done").classList.remove("show");
-  concluidoOk = false;
   editando = null;
   actualizarVisibilidade();
   desenhar();
@@ -2588,6 +2536,12 @@ $("num").addEventListener("input", (e) => {
     ? { folha: estado.folha.filter((f) => f.estado === "pronta").length } : {};
   if (haServico() !== ($("folha").childElementCount > 0)) desenharFolha();
   avisarEscondidas(antes);
+});
+
+// O número de garantia pode ter letras e traços, mas, tal como o interno, não
+// aceita espaços: tirá-los ao escrever e ao colar evita números que não batem.
+$("gar-num").addEventListener("input", (e) => {
+  e.target.value = e.target.value.replace(/\s/g, "");
 });
 
 $("cliente").addEventListener("input", (e) => {
@@ -2733,7 +2687,7 @@ $("retry").addEventListener("click", () => {
 // activo depois de partilhar: enquanto não houver confirmação de envio, as
 // fotografias ainda podem fazer falta.
 window.addEventListener("beforeunload", (e) => {
-  if (prontas().length && !concluidoOk) {
+  if (prontas().length) {
     e.preventDefault();
     e.returnValue = "";
   }
