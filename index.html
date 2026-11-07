@@ -18,7 +18,8 @@
   default-src 'none';
   img-src 'self' blob:;
   style-src 'self' 'unsafe-inline';
-  script-src 'self' 'unsafe-inline';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js;
+  connect-src data:;
   manifest-src 'self';
   form-action 'none';
   base-uri 'none'">
@@ -378,6 +379,35 @@
   }
   .send svg { width: 20px; height: 20px; stroke: #fff; }
   .send:active { background: var(--red-dark); }
+  /* Corte das etiquetas e documentos: ecrã inteiro por cima da app. */
+  .corte {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; flex-direction: column;
+    background: #000; color: #fff;
+  }
+  .corte-topo { padding: 14px 16px 8px; font-size: 15px; }
+  .corte-topo b { display: block; font-size: 17px; }
+  .corte-palco {
+    flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
+    padding: 24px; touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .corte-quadro { position: relative; max-width: 100%; max-height: 100%; }
+  .corte-quadro img { display: block; max-width: 100%; max-height: calc(100dvh - 200px); }
+  .corte-quadro svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .corte-canto {
+    position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px;
+    border-radius: 50%; border: 3px solid var(--red); background: rgba(227,10,23,.25);
+    touch-action: none;
+  }
+  .corte-botoes { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .corte-botoes button {
+    flex: 1; min-height: 52px; border: 0; border-radius: var(--r-md);
+    font: inherit; font-weight: 600; font-size: 16px;
+  }
+  .corte-sem { background: #2E2E30; color: #fff; }
+  .corte-sim { background: var(--red); color: #fff; }
+  .corte-sim:active { background: var(--red-dark); }
+
   .send:disabled { background: var(--muted); opacity: .5; cursor: not-allowed; }
   .dest {
     margin: 10px 0 0; text-align: center;
@@ -794,6 +824,24 @@
   </p>
 </div>
 
+<!-- Corte automático: aparece depois de uma etiqueta, folha ou fatura. -->
+<div class="corte" id="corte" role="dialog" aria-modal="true" aria-labelledby="corte-titulo" hidden>
+  <div class="corte-topo">
+    <b id="corte-titulo">Ajustar o corte</b>
+    <span id="corte-estado">Arrasta os cantos vermelhos se não estiverem certos.</span>
+  </div>
+  <div class="corte-palco">
+    <div class="corte-quadro" id="corte-quadro">
+      <img id="corte-img" alt="Fotografia a cortar">
+      <svg aria-hidden="true"><polygon fill="rgba(227,10,23,.15)" stroke="#E30A17" stroke-width="2"/></svg>
+    </div>
+  </div>
+  <div class="corte-botoes">
+    <button type="button" class="corte-sem" id="corte-sem">Usar sem cortar</button>
+    <button type="button" class="corte-sim" id="corte-sim">Cortar</button>
+  </div>
+</div>
+
 <!-- Entradas de ficheiro (escondidas) -->
 <input class="visually-hidden" type="file" id="in-etq-cam" accept="image/*" capture="environment">
 <input class="visually-hidden" type="file" id="in-etq-gal" accept="image/*" multiple>
@@ -807,6 +855,8 @@
    CONFIGURAÇÃO — é aqui que se mexe
    ═══════════════════════════════════════════════════════════════════════════ */
 const CONFIG = {
+  // Corte automático das fotografias de texto. Os testes desligam-no.
+  CORTE: true,
   // Caixa de correio que recebe os registos. Guardado em pedaços de propósito:
   // esta página é servida publicamente, e um endereço escrito por extenso no
   // código-fonte é apanhado pelos robôs que recolhem emails para spam.
@@ -1180,6 +1230,190 @@ async function comprimir(ficheiro, perfil = CONFIG.PERFIS.foto) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Corte automático (etiquetas, folha, fatura)
+   ═══════════════════════════════════════════════════════════════════════════ */
+// O OpenCV.js (≈3 MB) só se carrega quando chega a primeira fotografia de
+// texto, e fica em cache no browser. A CSP só deixa entrar este ficheiro exato,
+// e o integrity garante que é mesmo este. Sem rede ou com erro, a fotografia
+// segue como veio: o corte é uma ajuda, nunca um bloqueio.
+const OPENCV_URL = "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js";
+const OPENCV_SRI = "sha384-XsTfGA62I8LzqS3D7IcgiSOCrJuECWLcg4s1M0AnrkDCcJ8lXX+j+qdg+o6t7KZa";
+let opencvPromessa = null;
+
+function carregarOpenCV() {
+  if (!opencvPromessa) {
+    opencvPromessa = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = OPENCV_URL;
+      s.integrity = OPENCV_SRI;
+      s.crossOrigin = "anonymous";
+      s.onload = async () => {
+        try {
+          // O objeto do OpenCV tem um método then: resolver a promessa com ele
+          // fazia o browser chamá-lo sem fim e congelava a página. Resolve-se
+          // sem valor e lê-se window.cv depois.
+          if (window.cv instanceof Promise) window.cv = await window.cv;
+          if (window.cv.Mat) resolve();
+          else window.cv.onRuntimeInitialized = () => resolve();
+        } catch (e) { reject(e); }
+      };
+      s.onerror = () => reject(new Error("OpenCV indisponível"));
+      document.head.appendChild(s);
+    }).catch((e) => { opencvPromessa = null; throw e; });   // tenta outra vez na próxima
+  }
+  return opencvPromessa;
+}
+
+const comTempo = (p, ms) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error("tempo")), ms))]);
+
+// Cantos por ordem: superior esquerdo, superior direito, inferior direito, inferior esquerdo.
+function ordenarCantos(pts) {
+  const s = pts.map((p) => p.x + p.y), d = pts.map((p) => p.y - p.x);
+  const i = (arr, f) => arr.indexOf(f(...arr));
+  return [pts[i(s, Math.min)], pts[i(d, Math.min)], pts[i(s, Math.max)], pts[i(d, Math.max)]];
+}
+
+// Procura a folha: o maior contorno com 4 lados; sem esse, o retângulo à volta
+// do maior contorno; sem nada, uma margem de 5%. Corre numa cópia reduzida.
+function detetarCantos(cv, tela) {
+  const escala = Math.min(1, 1000 / Math.max(tela.width, tela.height));
+  const peq = document.createElement("canvas");
+  peq.width = Math.round(tela.width * escala);
+  peq.height = Math.round(tela.height * escala);
+  peq.getContext("2d").drawImage(tela, 0, 0, peq.width, peq.height);
+
+  const src = cv.imread(peq), cinz = new cv.Mat(), bordas = new cv.Mat();
+  const contornos = new cv.MatVector(), hier = new cv.Mat();
+  const nucleo = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5));
+  let melhor = null;
+  try {
+    cv.cvtColor(src, cinz, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(cinz, cinz, new cv.Size(5, 5), 0);
+    cv.Canny(cinz, bordas, 50, 150);
+    cv.dilate(bordas, bordas, nucleo);
+    cv.findContours(bordas, contornos, hier, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+    const areaMin = peq.width * peq.height * 0.08;
+    let melhorArea = 0, maiorIdx = -1, maiorArea = 0;
+    for (let k = 0; k < contornos.size(); k++) {
+      const c = contornos.get(k);
+      const area = cv.contourArea(c);
+      if (area > maiorArea) { maiorArea = area; maiorIdx = k; }
+      if (area > areaMin && area > melhorArea) {
+        const aprox = new cv.Mat();
+        cv.approxPolyDP(c, aprox, 0.02 * cv.arcLength(c, true), true);
+        if (aprox.rows === 4 && cv.isContourConvex(aprox)) {
+          melhorArea = area;
+          melhor = [0, 1, 2, 3].map((j) => ({ x: aprox.data32S[j * 2], y: aprox.data32S[j * 2 + 1] }));
+        }
+        aprox.delete();
+      }
+      c.delete();
+    }
+    if (!melhor && maiorIdx >= 0 && maiorArea > areaMin) {
+      const c = contornos.get(maiorIdx);
+      melhor = cv.RotatedRect.points(cv.minAreaRect(c)).map((p) => ({ x: p.x, y: p.y }));
+      c.delete();
+    }
+  } finally {
+    [src, cinz, bordas, contornos, hier, nucleo].forEach((m) => m.delete());
+  }
+  const w = tela.width, h = tela.height;
+  if (!melhor) return [{ x: w * .05, y: h * .05 }, { x: w * .95, y: h * .05 }, { x: w * .95, y: h * .95 }, { x: w * .05, y: h * .95 }];
+  const dentro = (v, max) => Math.min(Math.max(0, v), max);
+  return ordenarCantos(melhor.map((p) => ({ x: dentro(p.x / escala, w), y: dentro(p.y / escala, h) })));
+}
+
+// Endireita a perspetiva: o quadrilátero dos cantos passa a retângulo.
+function endireitar(cv, tela, [tl, tr, br, bl]) {
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const w = Math.max(1, Math.round(Math.max(dist(tl, tr), dist(bl, br))));
+  const h = Math.max(1, Math.round(Math.max(dist(tl, bl), dist(tr, br))));
+  const src = cv.imread(tela), dst = new cv.Mat();
+  const de = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
+  const para = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, w, 0, w, h, 0, h]);
+  const M = cv.getPerspectiveTransform(de, para);
+  const saida = document.createElement("canvas");
+  try {
+    cv.warpPerspective(src, dst, M, new cv.Size(w, h), cv.INTER_LINEAR, cv.BORDER_REPLICATE);
+    cv.imshow(saida, dst);
+  } finally {
+    [src, dst, de, para, M].forEach((m) => m.delete());
+  }
+  return saida;
+}
+
+// Mostra a fotografia com os cantos detetados e espera pela escolha do técnico.
+// Devolve os cantos (Cortar) ou null (Usar sem cortar).
+function pedirCantos(url, largura, altura, cantosIniciais) {
+  return new Promise((resolve) => {
+    const caixa = $("corte"), img = $("corte-img"), quadro = $("corte-quadro");
+    const poligono = caixa.querySelector("polygon");
+    const cantos = cantosIniciais.map((p) => ({ ...p }));
+    const pegas = cantos.map(() => {
+      const d = document.createElement("div");
+      d.className = "corte-canto";
+      quadro.appendChild(d);
+      return d;
+    });
+    const pos = () => {
+      const k = img.getBoundingClientRect().width / largura;
+      cantos.forEach((p, i) => { pegas[i].style.left = p.x * k + "px"; pegas[i].style.top = p.y * k + "px"; });
+      poligono.setAttribute("points", cantos.map((p) => `${p.x * k},${p.y * k}`).join(" "));
+    };
+    pegas.forEach((d, i) => d.addEventListener("pointerdown", (e) => {
+      d.setPointerCapture(e.pointerId);
+      const mover = (ev) => {
+        const r = img.getBoundingClientRect(), k = largura / r.width;
+        cantos[i] = {
+          x: Math.min(Math.max(0, (ev.clientX - r.left) * k), largura),
+          y: Math.min(Math.max(0, (ev.clientY - r.top) * k), altura),
+        };
+        pos();
+      };
+      d.addEventListener("pointermove", mover);
+      d.addEventListener("pointerup", () => d.removeEventListener("pointermove", mover), { once: true });
+    }));
+    const fim = (resultado) => {
+      window.removeEventListener("resize", pos);
+      pegas.forEach((d) => d.remove());
+      caixa.hidden = true;
+      $("corte-sim").onclick = $("corte-sem").onclick = null;
+      resolve(resultado);
+    };
+    $("corte-sim").onclick = () => fim(cantos);
+    $("corte-sem").onclick = () => fim(null);
+    window.addEventListener("resize", pos);
+    img.onload = pos;
+    img.src = url;
+    caixa.hidden = false;
+    $("corte-sim").focus();
+  });
+}
+
+// Recebe o blob já comprimido; devolve-o cortado, ou igual se não houver corte.
+async function cortarSePossivel(blob, perfil) {
+  if (!CONFIG.CORTE) return blob;
+  let cv;
+  try { await comTempo(carregarOpenCV(), 20000); cv = window.cv; } catch (_) { return blob; }
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await viaElemento(blob);
+    const tela = document.createElement("canvas");
+    tela.width = img.naturalWidth; tela.height = img.naturalHeight;
+    tela.getContext("2d").drawImage(img, 0, 0);
+    const cantos = await pedirCantos(url, tela.width, tela.height, detetarCantos(cv, tela));
+    if (!cantos) return blob;
+    const saida = endireitar(cv, tela, cantos);
+    const novo = await new Promise((r) => saida.toBlob(r, "image/jpeg", perfil.qualidade));
+    return novo || blob;
+  } catch (_) {
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Adicionar e remover fotografias
    ═══════════════════════════════════════════════════════════════════════════ */
 // As etiquetas e as fotografias comportam-se da mesma maneira; só mudam o
@@ -1314,10 +1548,10 @@ async function adicionar(ficheiros, eq, alvo) {
     desenhar();
 
     try {
-      const [blob, capturada] = await Promise.all([
-        comprimir(ficheiro, CONFIG.PERFIS[PERFIL_POR_ALVO[alvo] || "foto"]),
-        dataOriginal(ficheiro),
-      ]);
+      const perfil = CONFIG.PERFIS[PERFIL_POR_ALVO[alvo] || "foto"];
+      let [blob, capturada] = await Promise.all([comprimir(ficheiro, perfil), dataOriginal(ficheiro)]);
+      // Texto (etiquetas, folha, fatura): propor o corte como num scanner.
+      if (PERFIL_POR_ALVO[alvo] === "texto") blob = await cortarSePossivel(blob, perfil);
       item.blob = blob;
       item.bytes = blob.size;
       item.url = URL.createObjectURL(blob);

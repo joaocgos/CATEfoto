@@ -67,6 +67,7 @@ function preparar() {
     return w.__r;
   };
   E("(memoria.ler = () => '', memoria.guardar = () => {}, 0)");
+  E("(CONFIG.CORTE = false, 0)");   // o corte espera por um toque: testa-se à parte
   w.navigator.canShare = () => true;
   w.navigator.share = async (dados) => { partilha = dados; };
   cliqueOriginal = w.HTMLInputElement.prototype.click;
