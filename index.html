@@ -1030,9 +1030,13 @@ const SERVICOS = [
   { chave: "ar_condicionado", curta: "ac", nome: "Ar Condicionado", detalhe: "",
     marca: "AR CONDICIONADO", texto: "Ar condicionado",
     icone: '<rect x="2.5" y="4.5" width="19" height="8" rx="1.8"/><path d="M6 9h12"/><path d="M7 16.5c1.2 0 1.2 2 2.4 2M12 16.5c1.2 0 1.2 2 2.4 2"/>' },
+
+  { chave: "industrial", curta: "ind", nome: "Industrial", detalhe: "",
+    marca: "INDUSTRIAL", texto: "Industrial",
+    icone: '<path d="M3 21V10l5 3V10l5 3V10l5 3V4h3v17z"/><path d="M7 17h2M12 17h2"/>' },
 ];
 
-// Estado da garantia. Aplica-se aos três tipos, mas não a todos os momentos:
+// Estado da garantia. Aplica-se a todos os tipos, mas não a todos os momentos:
 // um momento com `semGarantia` não mostra este seletor.
 const GARANTIAS = [
   { chave: "garantia", curta: "gar", nome: "Em Garantia", detalhe: "",
@@ -1042,6 +1046,11 @@ const GARANTIAS = [
   { chave: "fora_garantia", curta: "fg", nome: "Fora de Garantia", detalhe: "",
     marca: "FORA GARANTIA", texto: "Fora de garantia",
     icone: '<path d="M12 2.5 4.5 5.5v6c0 4.4 3.2 8.4 7.5 9.9 4.3-1.5 7.5-5.5 7.5-9.9v-6z"/><path d="m9.5 9.5 5 5"/><path d="m14.5 9.5-5 5"/>' },
+
+  // Não sabe: segue como fora de garantia (sem cartão da fatura); o email diz-o.
+  { chave: "garantia_incerta", curta: "gi", nome: "Não sei", detalhe: "Fica por confirmar",
+    marca: "GARANTIA POR CONFIRMAR", texto: "Por confirmar",
+    icone: '<path d="M12 2.5 4.5 5.5v6c0 4.4 3.2 8.4 7.5 9.9 4.3-1.5 7.5-5.5 7.5-9.9v-6z"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2v.5"/><path d="M12 15.5h.01"/>' },
 ];
 
 const POR_CHAVE = (lista) => Object.fromEntries(lista.map((t) => [t.chave, t]));

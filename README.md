@@ -484,7 +484,7 @@ momento e o tipo, por esta ordem: `26000123 · OFICINA · DOMESTICO`. O número
 vem à frente porque a lista do email no telemóvel mostra pouco mais de 30
 caracteres, e é por ele que se procura um registo; a garantia fica de fora
 porque vai no corpo, por extenso. Nos ficheiros, o tipo e a garantia entram por
-códigos curtos — `dom`, `hot`, `ac` e `gar`, `fg` — porque é o que mais pesa no
+códigos curtos — `dom`, `hot`, `ac`, `ind` e `gar`, `fg`, `gi` (garantia por confirmar) — porque é o que mais pesa no
 comprimento do nome.
 
 O padrão é fixo e previsível de propósito: se algum dia se quiser arquivar esta
