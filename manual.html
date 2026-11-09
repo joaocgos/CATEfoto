@@ -175,8 +175,11 @@
   .mom h3 { margin: 0; font-size: 17px; }
   .mom .quando { margin: 2px 0 10px; font-size: 14px; color: var(--muted); }
   .mom ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
-  .mom li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: 15px; }
-  .mom li > span:first-child { flex: 1 1 150px; }
+  /* A pílula fica sempre à direita, na mesma coluna em todas as linhas: o nome
+     do campo é que parte em duas linhas quando falta espaço, nunca a pílula. */
+  .mom li { display: flex; gap: 10px; align-items: baseline; font-size: 15px; }
+  .mom li > span:first-child { flex: 1 1 auto; min-width: 0; }
+  .mom li > .tag { flex: none; margin-left: auto; }
 
   /* Tabelas e código */
   .rolar { overflow-x: auto; margin: 8px 0 12px; border: 1px solid var(--line); border-radius: 12px; }
