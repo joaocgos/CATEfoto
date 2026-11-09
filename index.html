@@ -385,7 +385,12 @@
     display: flex; flex-direction: column;
     background: #000; color: #fff;
   }
-  .corte-topo { padding: 14px 16px 8px; font-size: 15px; }
+  .corte-topo { padding: 14px 16px 8px; font-size: 15px; display: flex; gap: 12px; align-items: flex-start; }
+  .corte-topo > div { flex: 1; min-width: 0; }
+  .corte-outra {
+    flex: none; min-height: 44px; padding: 0 14px; border-radius: var(--r-md);
+    border: 1px solid #5A5A5E; background: transparent; color: #fff; font: inherit; font-weight: 600;
+  }
   .corte-topo b { display: block; font-size: 17px; }
   .corte-palco {
     flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
@@ -405,7 +410,8 @@
     flex: 1; min-height: 52px; border: 0; border-radius: var(--r-md);
     font: inherit; font-weight: 600; font-size: 16px;
   }
-  .corte-sem { background: #2E2E30; color: #fff; }
+  .corte-sem, .corte-rodar { background: #2E2E30; color: #fff; }
+  .corte-botoes .corte-rodar { flex: 0 0 auto; padding: 0 16px; }
   .corte-sim { background: var(--red); color: #fff; }
   .corte-sim:active { background: var(--red-dark); }
 
@@ -828,8 +834,11 @@
 <!-- Corte automático: aparece depois de uma etiqueta, folha ou fatura. -->
 <div class="corte" id="corte" role="dialog" aria-modal="true" aria-labelledby="corte-titulo" hidden>
   <div class="corte-topo">
-    <b id="corte-titulo">Ajustar o corte</b>
-    <span id="corte-estado">Arrasta os cantos vermelhos se não estiverem certos.</span>
+    <div>
+      <b id="corte-titulo">Ajustar o corte</b>
+      <span id="corte-estado">Arrasta os cantos vermelhos se não estiverem certos.</span>
+    </div>
+    <button type="button" class="corte-outra" id="corte-outra">Tirar outra</button>
   </div>
   <div class="corte-palco">
     <div class="corte-quadro" id="corte-quadro">
@@ -840,6 +849,7 @@
   </div>
   <div class="corte-botoes">
     <button type="button" class="corte-sem" id="corte-sem">Usar sem cortar</button>
+    <button type="button" class="corte-rodar" id="corte-rodar" aria-label="Rodar 90 graus" hidden>↻ Rodar</button>
     <button type="button" class="corte-sim" id="corte-sim">Cortar</button>
   </div>
 </div>
@@ -1379,11 +1389,13 @@ function pedirCantos(url, largura, altura, cantosIniciais) {
       window.removeEventListener("resize", pos);
       pegas.forEach((d) => d.remove());
       caixa.hidden = true;
-      $("corte-sim").onclick = $("corte-sem").onclick = null;
+      $("corte-sim").onclick = $("corte-sem").onclick = $("corte-outra").onclick = null;
       resolve(resultado);
     };
     $("corte-sim").onclick = () => fim(cantos);
     $("corte-sem").onclick = () => fim(null);
+    $("corte-outra").onclick = () => fim("outra");
+    $("corte-rodar").hidden = true;
     $("corte-titulo").textContent = "Ajustar o corte";
     $("corte-estado").textContent = "Arrasta os cantos vermelhos se não estiverem certos.";
     $("corte-sim").textContent = "Cortar";
@@ -1398,29 +1410,54 @@ function pedirCantos(url, largura, altura, cantosIniciais) {
   });
 }
 
-// Mostra o resultado do corte antes de o aceitar. true = usar; false = voltar a ajustar.
-function verResultado(urlRes) {
+// Roda uma imagem 90° no sentido dos ponteiros do relógio.
+function rodar90(tela) {
+  const r = document.createElement("canvas");
+  r.width = tela.height; r.height = tela.width;
+  const ctx = r.getContext("2d");
+  ctx.translate(r.width, 0);
+  ctx.rotate(Math.PI / 2);
+  ctx.drawImage(tela, 0, 0);
+  return r;
+}
+
+// Mostra o resultado antes de o aceitar, com a opção de o rodar.
+// Devolve { acao: "usar" | "ajustar" | "outra", tela } (tela já rodada).
+function verResultado(tela) {
   return new Promise((resolve) => {
-    $("corte-quadro").hidden = true;
     const res = $("corte-res");
-    res.src = urlRes;
+    let urlRes = null;
+    const mostrar = () => tela.toBlob((b) => {
+      if (urlRes) URL.revokeObjectURL(urlRes);
+      urlRes = URL.createObjectURL(b);
+      res.src = urlRes;
+    }, "image/jpeg", 0.9);
+    $("corte-quadro").hidden = true;
     res.hidden = false;
+    $("corte-rodar").hidden = false;
     $("corte-titulo").textContent = "Resultado";
-    $("corte-estado").textContent = "Confere se a etiqueta ou o documento ficou inteiro e legível.";
+    $("corte-estado").textContent = "Confere se ficou inteiro, legível e direito.";
     $("corte-sim").textContent = "Usar esta";
-    $("corte-sem").textContent = "Ajustar outra vez";
+    $("corte-sem").textContent = "Ajustar";
     $("corte").hidden = false;
-    const fim = (v) => {
-      $("corte-sim").onclick = $("corte-sem").onclick = null;
-      resolve(v);
+    mostrar();
+    const fim = (acao) => {
+      ["corte-sim", "corte-sem", "corte-rodar", "corte-outra"].forEach((id) => { $(id).onclick = null; });
+      $("corte-rodar").hidden = true;
+      if (acao !== "ajustar") { $("corte").hidden = true; res.hidden = true; }
+      if (urlRes) URL.revokeObjectURL(urlRes);
+      resolve({ acao, tela });
     };
-    $("corte-sim").onclick = () => { $("corte").hidden = true; res.hidden = true; fim(true); };
-    $("corte-sem").onclick = () => fim(false);
+    $("corte-rodar").onclick = () => { tela = rodar90(tela); mostrar(); };
+    $("corte-sim").onclick = () => fim("usar");
+    $("corte-sem").onclick = () => fim("ajustar");
+    $("corte-outra").onclick = () => fim("outra");
     $("corte-sim").focus();
   });
 }
 
-// Recebe o blob já comprimido; devolve-o cortado, ou igual se não houver corte.
+// Recebe o blob já comprimido; devolve-o cortado, igual se não houver corte,
+// ou null se o técnico pediu para tirar outra.
 async function cortarSePossivel(blob, perfil) {
   if (!CONFIG.CORTE) return blob;
   let cv;
@@ -1434,15 +1471,16 @@ async function cortarSePossivel(blob, perfil) {
     // Ajustar → ver o resultado → usar, ou voltar aos mesmos cantos e ajustar outra vez.
     let cantos = detetarCantos(cv, tela);
     for (;;) {
-      cantos = await pedirCantos(url, tela.width, tela.height, cantos);
-      if (!cantos) return blob;
-      const saida = endireitar(cv, tela, cantos);
-      const novo = await new Promise((r) => saida.toBlob(r, "image/jpeg", perfil.qualidade));
-      if (!novo) return blob;
-      const urlRes = URL.createObjectURL(novo);
-      const usar = await verResultado(urlRes);
-      URL.revokeObjectURL(urlRes);
-      if (usar) return novo;
+      const r = await pedirCantos(url, tela.width, tela.height, cantos);
+      if (r === "outra") return null;
+      if (!r) return blob;
+      cantos = r;
+      const v = await verResultado(endireitar(cv, tela, cantos));
+      if (v.acao === "outra") return null;
+      if (v.acao === "usar") {
+        const novo = await new Promise((res) => v.tela.toBlob(res, "image/jpeg", perfil.qualidade));
+        return novo || blob;
+      }
     }
   } catch (_) {
     return blob;
@@ -1590,6 +1628,14 @@ async function adicionar(ficheiros, eq, alvo) {
       let [blob, capturada] = await Promise.all([comprimir(ficheiro, perfil), dataOriginal(ficheiro)]);
       // Texto (etiquetas, folha, fatura): propor o corte como num scanner.
       if (PERFIL_POR_ALVO[alvo] === "texto") blob = await cortarSePossivel(blob, perfil);
+      if (!blob) {
+        // «Tirar outra»: esta não fica e a câmara abre logo. Ainda dentro do
+        // toque no botão, por isso o browser deixa abrir o seletor.
+        remover(item.id, eq, alvo);
+        pedido = { eq, alvo };
+        $("in-etq-cam").click();
+        continue;
+      }
       item.blob = blob;
       item.bytes = blob.size;
       item.url = URL.createObjectURL(blob);
