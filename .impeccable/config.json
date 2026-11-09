@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "manual.html"
+        ],
+        "createdAt": "2026-11-09T15:20:17.882Z",
+        "reason": "Pilulas inline no texto do manual; o utilizador aceitou o espaco atual"
+      }
+    ]
+  }
+}

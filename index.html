@@ -1047,7 +1047,7 @@ const GARANTIAS = [
     marca: "FORA GARANTIA", texto: "Fora de garantia",
     icone: '<path d="M12 2.5 4.5 5.5v6c0 4.4 3.2 8.4 7.5 9.9 4.3-1.5 7.5-5.5 7.5-9.9v-6z"/><path d="m9.5 9.5 5 5"/><path d="m14.5 9.5-5 5"/>' },
 
-  // Não sabe: segue como fora de garantia (sem cartão da fatura); o email diz-o.
+  // Não sabe: a fatura aparece mas é opcional; o email diz «Por confirmar».
   { chave: "garantia_incerta", curta: "gi", nome: "Não sei", detalhe: "Fica por confirmar",
     marca: "GARANTIA POR CONFIRMAR", texto: "Por confirmar",
     icone: '<path d="M12 2.5 4.5 5.5v6c0 4.4 3.2 8.4 7.5 9.9 4.3-1.5 7.5-5.5 7.5-9.9v-6z"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2v.5"/><path d="M12 15.5h.01"/>' },
@@ -1538,7 +1538,7 @@ function fotosVisiveisPorParte() {
   const conta = (arr) => arr.filter((f) => f.estado === "pronta").length;
   const p = {};
   if (haServico()) p.folha = conta(estado.folha);
-  if (emGarantia()) p.fatura = conta(estado.fatura);
+  if (mostraFatura()) p.fatura = conta(estado.fatura);
   if (semEquipamentos()) p.local = conta(estado.local);
   else p.equipamentos = estado.equipamentos
     .reduce((t, e) => t + conta(e.etiquetas) + conta(e.fotos), 0);
@@ -1575,7 +1575,7 @@ function avisarEscondidas(antes) {
 function partesDoRegisto() {
   const p = [];
   if (haServico()) p.push({ itens: estado.folha, rotulo: "folha_", eq: null });
-  if (emGarantia()) p.push({ itens: estado.fatura, rotulo: "fatura_", eq: null });
+  if (mostraFatura()) p.push({ itens: estado.fatura, rotulo: "fatura_", eq: null });
   if (semEquipamentos()) p.push({ itens: estado.local, rotulo: "", eq: null });
   else estado.equipamentos.forEach((e, eq) => {
     p.push({ itens: e.etiquetas, rotulo: "etiqueta_", eq });
@@ -1932,10 +1932,16 @@ function emGarantia() {
   return precisaGarantia() && estado.garantia === "garantia";
 }
 
+// A fatura aparece em garantia e quando a garantia está por confirmar (é ela
+// que pode tirar a dúvida); só em garantia pode ser obrigatória.
+function mostraFatura() {
+  return precisaGarantia() && (estado.garantia === "garantia" || estado.garantia === "garantia_incerta");
+}
+
 function desenharFatura() {
   const caixa = $("fatura");
   caixa.textContent = "";
-  if (!emGarantia()) return;
+  if (!mostraFatura()) return;
 
   const cartao = document.createElement("section");
   cartao.className = "card";
@@ -2158,7 +2164,7 @@ function redesenhar() {
   const nEtq = semEq ? 0 : conta("etiquetas");
   const nFot = semEq ? 0 : conta("fotos");
   const nFol = haServico() ? soProntas(estado.folha) : 0;
-  const nFat = emGarantia() ? soProntas(estado.fatura) : 0;
+  const nFat = mostraFatura() ? soProntas(estado.fatura) : 0;
   const nLoc = semEq ? soProntas(estado.local) : 0;
   const partes = [];
   if (nLoc) partes.push(nLoc + (nLoc === 1 ? " foto do local" : " fotos do local"));
