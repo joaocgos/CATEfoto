@@ -105,7 +105,9 @@
 
   /* Índice */
   /* Uma só linha, com rolagem própria: o conteúdo começa no primeiro ecrã. */
-  nav.indice { display: flex; flex-wrap: nowrap; gap: 8px; margin: 0 0 24px; overflow-x: auto; padding-bottom: 4px; }
+  /* Os atalhos partem em linhas em vez de rolarem de lado: no telemóvel o
+     scroll horizontal não se via e escondia metade dos atalhos. */
+  nav.indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
   nav.indice a {
     padding: 7px 13px; border-radius: 999px; font-size: 14px; font-weight: 600;
     background: var(--card); border: 1px solid var(--line); color: var(--ink-2); text-decoration: none;
