@@ -392,7 +392,8 @@
     padding: 24px; touch-action: none; user-select: none; -webkit-user-select: none;
   }
   .corte-quadro { position: relative; max-width: 100%; max-height: 100%; }
-  .corte-quadro img { display: block; max-width: 100%; max-height: calc(100dvh - 200px); }
+  .corte-quadro img, .corte-res { display: block; max-width: 100%; max-height: calc(100dvh - 200px); }
+  .corte-res { background: #fff; }
   .corte-quadro svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
   .corte-canto {
     position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px;
@@ -835,6 +836,7 @@
       <img id="corte-img" alt="Fotografia a cortar">
       <svg aria-hidden="true"><polygon fill="rgba(227,10,23,.15)" stroke="#E30A17" stroke-width="2"/></svg>
     </div>
+    <img class="corte-res" id="corte-res" alt="Resultado do corte" hidden>
   </div>
   <div class="corte-botoes">
     <button type="button" class="corte-sem" id="corte-sem">Usar sem cortar</button>
@@ -942,7 +944,7 @@ const MOMENTOS = [
     numeroDispensavel: true,
     // É no primeiro contacto que a fatura aparece: em garantia, pede-se aqui.
     faturaObrigatoria: true,
-    icone: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/>' },
+    icone: '<path d="M2.5 6.5h11v10h-11z"/><path d="M13.5 9.5h4l3.5 3.5v3.5h-7.5"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>' },
 
   { chave: "reparacao_local", nome: "Reparação", detalhe: "resolvida no local",
     marca: "REPARACAO LOCAL", texto: "Reparação no local do cliente",
@@ -1382,10 +1384,38 @@ function pedirCantos(url, largura, altura, cantosIniciais) {
     };
     $("corte-sim").onclick = () => fim(cantos);
     $("corte-sem").onclick = () => fim(null);
+    $("corte-titulo").textContent = "Ajustar o corte";
+    $("corte-estado").textContent = "Arrasta os cantos vermelhos se não estiverem certos.";
+    $("corte-sim").textContent = "Cortar";
+    $("corte-sem").textContent = "Usar sem cortar";
+    $("corte-res").hidden = true;
+    quadro.hidden = false;
     window.addEventListener("resize", pos);
     img.onload = pos;
-    img.src = url;
     caixa.hidden = false;
+    if (img.src === url && img.complete) pos(); else img.src = url;
+    $("corte-sim").focus();
+  });
+}
+
+// Mostra o resultado do corte antes de o aceitar. true = usar; false = voltar a ajustar.
+function verResultado(urlRes) {
+  return new Promise((resolve) => {
+    $("corte-quadro").hidden = true;
+    const res = $("corte-res");
+    res.src = urlRes;
+    res.hidden = false;
+    $("corte-titulo").textContent = "Resultado";
+    $("corte-estado").textContent = "Confere se a etiqueta ou o documento ficou inteiro e legível.";
+    $("corte-sim").textContent = "Usar esta";
+    $("corte-sem").textContent = "Ajustar outra vez";
+    $("corte").hidden = false;
+    const fim = (v) => {
+      $("corte-sim").onclick = $("corte-sem").onclick = null;
+      resolve(v);
+    };
+    $("corte-sim").onclick = () => { $("corte").hidden = true; res.hidden = true; fim(true); };
+    $("corte-sem").onclick = () => fim(false);
     $("corte-sim").focus();
   });
 }
@@ -1401,11 +1431,19 @@ async function cortarSePossivel(blob, perfil) {
     const tela = document.createElement("canvas");
     tela.width = img.naturalWidth; tela.height = img.naturalHeight;
     tela.getContext("2d").drawImage(img, 0, 0);
-    const cantos = await pedirCantos(url, tela.width, tela.height, detetarCantos(cv, tela));
-    if (!cantos) return blob;
-    const saida = endireitar(cv, tela, cantos);
-    const novo = await new Promise((r) => saida.toBlob(r, "image/jpeg", perfil.qualidade));
-    return novo || blob;
+    // Ajustar → ver o resultado → usar, ou voltar aos mesmos cantos e ajustar outra vez.
+    let cantos = detetarCantos(cv, tela);
+    for (;;) {
+      cantos = await pedirCantos(url, tela.width, tela.height, cantos);
+      if (!cantos) return blob;
+      const saida = endireitar(cv, tela, cantos);
+      const novo = await new Promise((r) => saida.toBlob(r, "image/jpeg", perfil.qualidade));
+      if (!novo) return blob;
+      const urlRes = URL.createObjectURL(novo);
+      const usar = await verResultado(urlRes);
+      URL.revokeObjectURL(urlRes);
+      if (usar) return novo;
+    }
   } catch (_) {
     return blob;
   } finally {
