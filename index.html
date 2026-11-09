@@ -906,7 +906,7 @@ const CONFIG = {
   // fatura, folha de serviço) usa-se o perfil "texto"; nas fotografias do
   // equipamento e do local, o perfil "foto".
   //
-  // Medido em 2026-09-11 com uma chapa simulada numa foto de 12 MP: a 1280 px
+  // Medido em 2026-09-11 com uma etiqueta simulada numa foto de 12 MP: a 1280 px
   // e 0.72 (a regulação anterior) os algarismos da letra miúda já se
   // confundiam; a 1600 lia-se tudo; a 2048 ficava quase igual ao original.
   // Pesa mais do que parece porque a cópia do email é quase sempre a única —
@@ -957,10 +957,10 @@ const MOMENTOS = [
   // e a marca ficam curtas de propósito — são o que alonga assunto e ficheiros.
   { chave: "oficina", nome: "Entrada Oficina", detalhe: "por técnico ou pelo balcão",
     marca: "OFICINA", texto: "Entrada em oficina",
-    // É pela chapa que a oficina identifica a máquina que acabou de entrar.
+    // É pela etiqueta que a oficina identifica a máquina que acabou de entrar.
     etiquetaObrigatoria: true,
     faturaObrigatoria: true,
-    ajudaEtiquetas: "A chapa com a marca, o modelo e o número de série. É por " +
+    ajudaEtiquetas: "A etiqueta com a marca, o modelo e o número de série. É por " +
                     "ela que a oficina identifica a máquina, por isso não pode faltar.",
     icone: '<path d="M3 21V9.5l9-6 9 6V21z"/><path d="M7.5 21v-7h9v7"/><path d="M7.5 16.6h9M7.5 18.8h9"/>' },
 
@@ -977,7 +977,7 @@ const MOMENTOS = [
     // ficar registado agora, pode ser preciso voltar lá para o ir buscar.
     etiquetaObrigatoria: true,
     faturaObrigatoria: true,
-    ajudaEtiquetas: "A chapa com a marca, o modelo e o número de série — " +
+    ajudaEtiquetas: "A etiqueta com a marca, o modelo e o número de série — " +
                     "é o que dá acesso à garantia do equipamento novo.",
     // Num equipamento acabado de instalar não há danos anteriores a documentar.
     ajudaFotos: "O equipamento instalado e as ligações feitas.",
@@ -1978,15 +1978,15 @@ function desenharEquipamentos() {
 
     const subEtiquetas = construirSubseccao(
       eq, "etiquetas", obrigatoria ? "Etiquetas · obrigatória" : "Etiquetas",
-      (m.ajudaEtiquetas || "A chapa com a marca, o modelo e o número de série.") +
-        (obrigatoria ? " Se a chapa não se lê ou não existe, marca a caixa por baixo." : ""),
+      (m.ajudaEtiquetas || "A etiqueta com a marca, o modelo e o número de série.") +
+        (obrigatoria ? " Se a etiqueta não se lê ou não existe, marca a caixa por baixo." : ""),
       "in-etq-cam", "in-etq-gal");
-    // Obrigatória, mas há chapas que não se leem ou já não existem: aí
+    // Obrigatória, mas há etiquetas que não se leem ou já não existem: aí
     // dispensa-se, e fica escrito. Antes, esse caso era um beco sem saída.
     if (obrigatoria) {
       subEtiquetas.appendChild(caixaDispensa(
         estado.equipamentos[eq].dispensaEtiqueta,
-        "Chapa ilegível ou inexistente — omitir (fica registado)"));
+        "Etiqueta ilegível ou inexistente — omitir (fica registado)"));
     }
     cartao.appendChild(subEtiquetas);
 
@@ -2291,7 +2291,7 @@ function validar() {
     (e) => ![...e.etiquetas, ...e.fotos].some((f) => f.estado === "pronta"));
   const faltaEq = !fotMal && !semEq && estado.equipamentos.length > 1 && vazio >= 0;
 
-  // Há momentos em que a chapa é o que identifica a máquina; aí não se deixa
+  // Há momentos em que a etiqueta é o que identifica a máquina; aí não se deixa
   // passar sem ela.
   const semEtq = etiquetaObrigatoria() && !semEq
     ? estado.equipamentos.findIndex(
@@ -2320,8 +2320,8 @@ function validar() {
     erroFotos.textContent = `O equipamento ${vazio + 1} não tem fotografias.`;
   } else if (faltaEtq) {
     erroFotos.textContent = varios
-      ? `O equipamento ${semEtq + 1} não tem etiqueta — junta-a, ou marca que a chapa não se lê.`
-      : "Falta a etiqueta do equipamento — junta-a, ou marca que a chapa não se lê.";
+      ? `O equipamento ${semEtq + 1} não tem etiqueta — junta-a, ou marca que a etiqueta não se lê.`
+      : "Falta a etiqueta do equipamento — junta-a, ou marca que a etiqueta não se lê.";
   }
   erroFotos.classList.toggle("show", fotMal || faltaEq || faltaEtq);
 

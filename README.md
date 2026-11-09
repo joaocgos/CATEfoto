@@ -84,7 +84,7 @@ dica do número do serviço, das etiquetas e da fatura diz quando se pode omitir
 2. Escrever o número do serviço e quem regista — o nome fica guardado no
    telemóvel e não é preciso repetir.
 3. Fotografar as **etiquetas do equipamento** (marca, modelo, número de série).
-   Cabem várias, para equipamentos com mais do que uma chapa.
+   Cabem várias, para equipamentos com mais do que uma etiqueta.
 4. Fotografar o **equipamento** — pela câmara ou escolhendo da galeria.
 5. **Partilhar registo** → abre a partilha do telemóvel → escolher o email →
    **carregar em enviar dentro da app de email**.
@@ -191,7 +191,7 @@ diz só «Serviço: …» e um externo escrito antes de mudar de momento não se
 
 Três coisas podem ser obrigatórias e, ainda assim, faltar por boas razões: o
 **número do serviço** (ainda não aberto), a **etiqueta** de um equipamento
-(chapa ilegível ou inexistente) e a **fatura** (o cliente não a tem). Para
+(etiqueta ilegível ou inexistente) e a **fatura** (o cliente não a tem). Para
 essas há uma caixa — *"… — omitir (fica registado)"* — que deixa partilhar sem
 elas. Ao marcar, aparece um campo opcional para o motivo.
 
@@ -241,7 +241,7 @@ partilhar, um bloco vazio no meio dos outros é assinalado pelo nome
 
 ### As etiquetas
 
-Cabem várias por equipamento — há máquinas com mais do que uma chapa, e às
+Cabem várias por equipamento — há máquinas com mais do que uma etiqueta, e às
 vezes é preciso repetir uma que saiu tremida.
 
 Se o serviço já tiver tido etiquetas partilhadas noutro registo, aparece um
@@ -335,9 +335,9 @@ de quem é e onde, e os campos ficam escondidos (o que lá estiver escrito não
 segue). No Orçamento o nome do cliente e a morada estão sempre à vista.
 
 `etiquetaObrigatoria` está ligada na **Entrada Oficina** e na **Montagem**: é
-pela chapa que a oficina identifica a máquina que acabou de entrar. O cartão
+pela etiqueta que a oficina identifica a máquina que acabou de entrar. O cartão
 passa a dizer "Etiquetas · obrigatória" e, se faltar, a validação aponta o
-equipamento em causa. Como há chapas ilegíveis ou arrancadas, cada equipamento
+equipamento em causa. Como há etiquetas ilegíveis ou arrancadas, cada equipamento
 tem a sua caixa de dispensa. Nos outros momentos as etiquetas são opcionais.
 
 `faturaObrigatoria` marca o **primeiro contacto** — Recolha, Reparação no
@@ -347,7 +347,7 @@ fatura normalmente já seguiu, e uma caixa em todos os registos virava reflexo.
 
 `ajudaEtiquetas` e `ajudaFotos` substituem o texto de ajuda dessas secções. O
 mesmo campo pede coisas diferentes conforme o momento: na Entrada Oficina a
-chapa serve para identificar a máquina que entrou, na Montagem é o que dá acesso
+etiqueta serve para identificar a máquina que entrou, na Montagem é o que dá acesso
 à garantia do equipamento novo. E num equipamento acabado de instalar não há
 danos anteriores a documentar, por isso a Montagem pede "o equipamento instalado
 e as ligações feitas" em vez de "o estado do equipamento e qualquer dano
@@ -407,7 +407,7 @@ vazia mostra-se o destino único.
 **Qualidade das fotografias** — dois perfis em `PERFIS`. Onde há texto que tem
 de se ler (etiquetas, fatura, folha de serviço) usa-se o `texto`, a 2048 px e
 qualidade 0.82; nas fotografias do equipamento e do local, o `foto`, a 1600 px
-e 0.78. Medido com uma chapa e uma superfície riscada simuladas numa foto de
+e 0.78. Medido com uma etiqueta e uma superfície riscada simuladas numa foto de
 12 MP: a 1280 px (a regulação anterior) os algarismos da letra miúda já se
 confundiam; as amolgadelas veem-se em qualquer regulação; os riscos muito finos
 numa foto de conjunto não são garantidos por nenhuma — por isso a ajuda das

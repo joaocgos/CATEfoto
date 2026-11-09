@@ -234,7 +234,7 @@ async function correr() {
   ok("Sem etiqueta não parte", !p);
   marcaCaixa(bloco("Etiquetas")).click();
   p = await partilhar();
-  ok("Com a chapa omitida parte", !!p);
+  ok("Com a etiqueta omitida parte", !!p);
   ok("Corpo lista a etiqueta omitida", p && p.text.includes("Etiqueta do equipamento"));
   await novo();
 
