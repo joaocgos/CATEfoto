@@ -255,7 +255,7 @@ omissão deliberada de um esquecimento. A linha nunca diz que as etiquetas «já
 foram enviadas» noutro registo: a app só sabe que foram *partilhadas*, não que o
 email saiu.
 
-### Sem rede em casa do cliente
+### Sem rede no local do cliente
 
 Não é problema. O técnico tira as fotografias com a câmara normal do telemóvel
 e mais tarde, já com rede, envia-as pela galeria. A página lê a data original
@@ -321,7 +321,7 @@ pelo código. As marcas existentes:
 - **Obrigatório** — Entrada Oficina, Entrega e Montagem, onde o serviço já
   existe: exigir o número é o que liga o registo ao processo.
 - **Obrigatório com dispensa** (`numeroDispensavel`) — Recolha e Reparação no
-  local: vai-se a casa do cliente e o serviço pode ser aberto só depois. O
+  local: vai-se ao local do cliente e o serviço pode ser aberto só depois. O
   número é pedido, mas pode ser omitido com a caixa por baixo do campo (ver
   *Dispensa com registo*).
 - **Opcional** (`numeroOpcional`) — Orçamento: as fotografias servem
@@ -484,7 +484,7 @@ de ataque a quase nada.
 por um `canvas`, o que descarta todos os metadados do original — incluindo as
 coordenadas GPS que os telemóveis gravam. A data em que a fotografia foi tirada
 é lida *antes* disso e vai no texto do email, por isso guarda-se o que é útil e
-deita-se fora o que exporia a casa do cliente. Verificado com uma imagem de
+deita-se fora o que exporia o local do cliente. Verificado com uma imagem de
 teste com GPS: sai sem qualquer bloco EXIF.
 
 **O endereço de destino não aparece por extenso no código.** É montado em tempo

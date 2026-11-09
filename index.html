@@ -935,8 +935,8 @@ const EMAIL_DESTINO = CONFIG.EMAIL_CAIXA + String.fromCharCode(64) + CONFIG.EMAI
 //   marca   → entra no assunto, sem acentos
 //   detalhe → segunda linha do botão (pode ficar vazia)
 const MOMENTOS = [
-  { chave: "recolha", nome: "Recolha", detalhe: "em casa do cliente",
-    marca: "RECOLHA", texto: "Recolha em casa do cliente",
+  { chave: "recolha", nome: "Recolha", detalhe: "no local do cliente",
+    marca: "RECOLHA", texto: "Recolha no local do cliente",
     // Nem sempre há serviço aberto no momento da recolha. O número é pedido,
     // mas pode ser dispensado — fica registado, e aí exige-se o nome do cliente.
     numeroDispensavel: true,
@@ -945,8 +945,8 @@ const MOMENTOS = [
     icone: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/>' },
 
   { chave: "reparacao_local", nome: "Reparação", detalhe: "resolvida no local",
-    marca: "REPARACAO LOCAL", texto: "Reparação no local, em casa do cliente",
-    // Mesma situação da recolha: vai-se a casa e o serviço pode ser aberto só
+    marca: "REPARACAO LOCAL", texto: "Reparação no local do cliente",
+    // Mesma situação da recolha: vai-se ao cliente e o serviço pode ser aberto só
     // depois. O número é pedido, mas pode ser dispensado.
     numeroDispensavel: true,
     faturaObrigatoria: true,
@@ -1121,7 +1121,7 @@ function subirAoTopo() {
 /* ═══════════════════════════════════════════════════════════════════════════
    Leitura da data original (EXIF)
 
-   Permite tirar as fotografias sem rede em casa do cliente e só enviá-las
+   Permite tirar as fotografias sem rede no local do cliente e só enviá-las
    mais tarde: o email mostra a hora a que a fotografia foi mesmo tirada,
    não a hora do envio.
    ═══════════════════════════════════════════════════════════════════════════ */
