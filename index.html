@@ -8,11 +8,12 @@
 <meta name="robots" content="noindex, nofollow">
 
 <!--
-  A página não carrega nada de servidores externos: o CSS e o JS são inline e as
-  imagens são ficheiros irmãos ou blobs gerados no próprio telemóvel. Por isso
-  pode fechar-se quase tudo. O que isto garante na prática: mesmo que alguma vez
-  entre código indesejado na página, ele não consegue enviar as fotografias nem
-  os dados para lado nenhum, porque connect-src fica bloqueado por omissão.
+  A página só carrega um ficheiro de fora: o OpenCV.js do corte automático, com
+  endereço fixo e verificação de integridade. O resto do CSS e do JS é inline e
+  as imagens são ficheiros irmãos ou blobs gerados no próprio telemóvel. O que
+  isto garante na prática: mesmo que alguma vez entre código indesejado na
+  página, ele não consegue enviar as fotografias nem os dados para lado nenhum,
+  porque connect-src só admite data: (o OpenCV lê o seu próprio WebAssembly).
 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';

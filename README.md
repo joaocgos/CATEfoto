@@ -255,6 +255,25 @@ omissão deliberada de um esquecimento. A linha nunca diz que as etiquetas «já
 foram enviadas» noutro registo: a app só sabe que foram *partilhadas*, não que o
 email saiu.
 
+### Corte automático
+
+Depois de uma fotografia de **etiqueta, folha de serviço ou fatura** (o perfil
+`texto` em `PERFIL_POR_ALVO`), a app abre um ecrã de corte, como um scanner:
+
+1. Deteta os 4 cantos do papel (OpenCV.js: contornos, o maior com 4 lados; sem
+   esse, o retângulo à volta do maior contorno; sem nada, 5% de margem).
+2. O técnico arrasta os cantos, se for preciso, e carrega em **Cortar**; ou
+   **Usar sem cortar**.
+3. Vê o **Resultado** endireitado, pode **Rodar** 90° de cada vez, e escolhe
+   **Usar esta** ou **Ajustar** (volta aos mesmos cantos).
+4. Em qualquer dos ecrãs, **Tirar outra** descarta a fotografia e abre a câmara
+   outra vez.
+
+O OpenCV.js (≈3 MB) só se descarrega na primeira fotografia de texto e fica em
+cache. Se não carregar em 20 s, ou der erro, a fotografia segue sem corte — o
+corte é uma ajuda, nunca um bloqueio. `CONFIG.CORTE` desliga-o (os testes
+fazem-no, porque o ecrã espera por um toque).
+
 ### Sem rede no local do cliente
 
 Não é problema. O técnico tira as fotografias com a câmara normal do telemóvel
@@ -442,7 +461,8 @@ por causa dessa mesma política, e foi retirada.
 
 Se um dia fizer falta, seria um projeto à parte: um servidor que receba as
 fotografias e as reencaminhe, uma conta de serviço de email, uma chave guardada
-no servidor e o `connect-src` da CSP aberto só para esse endereço.
+no servidor e o `connect-src` da CSP aberto só para esse endereço (hoje só
+admite `data:`, para o corte automático).
 
 ---
 
@@ -477,8 +497,12 @@ nome do ficheiro e do assunto, sem depender de nada do lado da página.
 
 A app não tem servidor, não tem base de dados e não guarda fotografias em lado
 nenhum: elas existem na memória do telemóvel até serem entregues à app de email.
-Não há dependências externas nem código de terceiros — o que reduz a superfície
-de ataque a quase nada.
+O único código de terceiros é o **OpenCV.js** do corte automático, carregado só
+quando é preciso, de um endereço fixo no jsDelivr e com verificação de
+integridade (SRI): se o ficheiro mudar, o browser recusa-o. A CSP só autoriza
+esse ficheiro exato. Para ele correr, a CSP permite `unsafe-eval` e
+`wasm-unsafe-eval`, e `connect-src data:` (o OpenCV lê o seu próprio WebAssembly,
+embutido no ficheiro). Ligações a servidores continuam bloqueadas.
 
 **As fotografias não levam a morada do cliente.** A recompressão passa a imagem
 por um `canvas`, o que descarta todos os metadados do original — incluindo as
