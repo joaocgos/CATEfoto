@@ -90,7 +90,7 @@ dica do número do serviço, das etiquetas e da fatura diz quando se pode omitir
    «Sem rede? Partilhar pela app de email» (ver *Envio direto*).
 
 O corpo leva o técnico, a data e a hora a que cada fotografia foi realmente
-tirada. O assunto vai no formato `26000123 · RECOLHA · DOMESTICO` — ver
+tirada. O assunto vai no formato `000123 · RECOLHA · DOMESTICO` — ver
 *O assunto nem sempre chega*.
 
 ### O assunto depende da app de email
@@ -134,7 +134,7 @@ preenchido — o envio tem mesmo de ser confirmado lá dentro.
 
 Por isso a ligação diz *Partilhar pela app de email* e o ecrã final diz *Falta
 enviar o email*. Nenhum dos dois promete o que a página não pode garantir. O ecrã final
-traz um recibo do que ficou empacotado (`26000123 · RECOLHA · DOMESTICO · 5
+traz um recibo do que ficou empacotado (`000123 · RECOLHA · DOMESTICO · 5
 fotografias`), para o técnico confirmar o que vai enviar, e um ícone neutro: é um
 estado pendente, não um erro.
 
@@ -168,7 +168,7 @@ espera. Um "Novo registo" começa sempre com a pergunta desligada.
 Quando há um número de serviço preenchido — obrigatório ou não — aparece um
 cartão para fotografar a folha de serviço. É opcional, cabem quatro fotografias
 (frente, verso, páginas seguintes), e os ficheiros saem como
-`26000123_recolha_dom_gar_folha_01.jpg`.
+`000123_recolha_dom_gar_folha_01.jpg`.
 
 Ao contrário das etiquetas e das fotografias, a folha pertence ao **serviço** e
 não a um equipamento: por isso tem cartão próprio e o nome do ficheiro nunca
@@ -181,7 +181,7 @@ Sem número de serviço o cartão não aparece — não haveria folha a que se r
 Nos registos **em garantia** aparece um cartão para fotografar a fatura de
 compra — é o que prova que o equipamento está coberto. Cabem três
 fotografias. Se o cliente tiver a fatura no telemóvel, fotografa-se o ecrã. Os
-ficheiros saem como `26000123_recolha_dom_gar_fatura_01.jpg`.
+ficheiros saem como `000123_recolha_dom_gar_fatura_01.jpg`.
 
 No primeiro contacto é obrigatória com dispensa ("O cliente não tem a fatura");
 na Entrega é opcional (ver `faturaObrigatoria`).
@@ -194,14 +194,17 @@ Orçamento (marca `semServicoExterno`), o campo **Número do serviço** passa a 
 «interno» e aparece **Número do serviço externo (opcional)**, até 40 caracteres.
 Nunca é obrigatório e não tem caixa de omissão.
 
-Os dois números seguem a mesma regra: **letras maiúsculas sem acentos, algarismos
-e traços, sem espaços**. As minúsculas passam a maiúsculas e o resto sai ao escrever e ao colar, porque o número interno entra
-nos nomes dos ficheiros (uma barra ou um acento partiam o nome). O interno precisa
-de pelo menos uma letra ou algarismo.
+O **interno tem sempre 6 algarismos**, sem espaços nem letras, com os zeros do
+início (`123456` ou `000006`): o resto sai ao escrever e ao colar, e não passa dos 6.
+Mesmo onde é opcional, se for preenchido tem de ter os 6. O **externo** leva letras
+maiúsculas sem acentos, algarismos e traços, sem espaços.
+
+Enquanto falta algo obrigatório, o botão de envio fica cinzento e por baixo aparece
+**Falta: …**, que encolhe à medida que se preenche.
 
 Vai só no corpo do email, com a garantia logo por baixo:
 
-    Serviço interno: 26000123
+    Serviço interno: 000123
     Serviço externo: AB12-34
     Garantia: Em garantia
 
@@ -435,7 +438,7 @@ sem isto, veria imagens sem saber o que se lhe pede.
 
 Também não tem garantia (`semGarantia`): um levantamento de local não tem
 estado de garantia, por isso o seletor nem aparece. Os ficheiros saem sem `eq`,
-sem `etiqueta` e sem garantia: `26000123_orcamento_dom_01.jpg`.
+sem `etiqueta` e sem garantia: `000123_orcamento_dom_01.jpg`.
 
 Sem número, o assunto identifica pelo cliente
 (`Maria Fernandes · RECOLHA · DOMESTICO`) e os ficheiros levam um
@@ -503,17 +506,17 @@ fotografias nem os dados para outro lado.
 
 Com um só equipamento:
 
-    26000123_oficina_dom_fg_etiqueta_01.jpg
-    26000123_oficina_dom_fg_01.jpg
+    000123_oficina_dom_fg_etiqueta_01.jpg
+    000123_oficina_dom_fg_01.jpg
 
 Com vários, entra o número do equipamento — que só aparece quando é preciso,
 para não alongar o nome no caso comum:
 
-    26000123_recolha_hot_gar_eq1_etiqueta_01.jpg
-    26000123_recolha_hot_gar_eq2_01.jpg
+    000123_recolha_hot_gar_eq1_etiqueta_01.jpg
+    000123_recolha_hot_gar_eq2_01.jpg
 
 O assunto — quando a app de email o aceita — leva o número do serviço, o
-momento e o tipo, por esta ordem: `26000123 · OFICINA · DOMESTICO`. O número
+momento e o tipo, por esta ordem: `000123 · OFICINA · DOMESTICO`. O número
 vem à frente porque a lista do email no telemóvel mostra pouco mais de 30
 caracteres, e é por ele que se procura um registo; a garantia fica de fora
 porque vai no corpo, por extenso. Um serviço por acabar (estado Parcial ou Não

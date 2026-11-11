@@ -146,25 +146,27 @@ async function correr() {
 
   titulo("Registo simples (Recolha, Doméstico, fora de garantia)");
   classificar("Doméstico", "Recolha", "Fora de Garantia");
-  escrever("num", "26000123"); escrever("tec", "Teste");
-  escrever("num", "26 00a-1/ç");
-  ok("O número aceita letras, algarismos e traços; põe em maiúsculas e tira espaços, barras e acentos", el("num").value === "2600A-1", el("num").value);
-  escrever("num", "---");
+  escrever("num", "000123"); escrever("tec", "Teste");
+  escrever("num", "00 01a-2/ç34");
+  ok("O número interno só aceita algarismos e tira o resto", el("num").value === "000123" || el("num").value === "00012", el("num").value);
+  escrever("num", "12345");
   E("validar()");
-  ok("Só traços não é um número válido", el("num").classList.contains("invalid"));
-  escrever("num", "AB-26000");
-  ok("Um número com letras serve para o assunto e para os ficheiros", E("assuntoDoRegisto()") === "AB-26000 · RECOLHA · DOMESTICO", E("assuntoDoRegisto()"));
-  escrever("num", "26000123");
+  ok("Com 5 algarismos não é um número válido", el("num").classList.contains("invalid"));
+  escrever("num", "1234567");
+  ok("Não passa de 6 algarismos", el("num").value === "123456", el("num").value);
+  escrever("num", "000123");
+  ok("Os zeros do início ficam no assunto", E("assuntoDoRegisto()") === "000123 · RECOLHA · DOMESTICO", E("assuntoDoRegisto()"));
+  ok("A lista diz o que falta", el("em-falta").textContent.includes("fotografias"), el("em-falta").textContent);
   ok("Sem fotografia não se pode partilhar", el("send").disabled);
   await juntar("Fotografias");
   let p = await partilhar();
   ok("Partilhou", !!p);
-  ok("Assunto: número · momento · tipo", p && p.title === "26000123 · RECOLHA · DOMESTICO", p && p.title);
+  ok("Assunto: número · momento · tipo", p && p.title === "000123 · RECOLHA · DOMESTICO", p && p.title);
   ok("O corpo começa pelo cabeçalho", p && p.text.startsWith("Registo fotográfico — CATEfoto"));
-  ok("Corpo: «Serviço interno», sem externo quando fica vazio", p && p.text.includes("Serviço interno: 26000123") && !p.text.includes("Serviço externo"));
+  ok("Corpo: «Serviço interno», sem externo quando fica vazio", p && p.text.includes("Serviço interno: 000123") && !p.text.includes("Serviço externo"));
   ok("Corpo: sem «já enviadas»", p && !p.text.includes("já enviadas") && p.text.includes("Etiquetas: nenhuma neste registo."));
-  ok("Nome do ficheiro", nomes(p).join() === "26000123_recolha_dom_fg_01.jpg", nomes(p));
-  ok("O ecrã final dá o recibo", el("done-resumo").textContent === "26000123 · RECOLHA · DOMESTICO · 1 fotografia", el("done-resumo").textContent);
+  ok("Nome do ficheiro", nomes(p).join() === "000123_recolha_dom_fg_01.jpg", nomes(p));
+  ok("O ecrã final dá o recibo", el("done-resumo").textContent === "000123 · RECOLHA · DOMESTICO · 1 fotografia", el("done-resumo").textContent);
   await novo();
   ok("Novo registo: a classificação volta a zero", E("estado.momento === null && estado.servico === null && estado.garantia === null"));
   ok("Novo registo: só o nome de quem regista fica", el("num").value === "" && el("tec").value === "Teste");
@@ -181,7 +183,7 @@ async function correr() {
 
   titulo("Serviço externo");
   classificar("Doméstico", "Recolha", "Em Garantia");
-  escrever("num", "26000124"); escrever("tec", "Teste");
+  escrever("num", "000124"); escrever("tec", "Teste");
   ok("Aparece em garantia", !el("campo-num-externo").hidden);
   ok("O número de cima passa a «interno»", el("num-lbl").textContent.includes("interno"), el("num-lbl").textContent);
   escrever("num-externo", "ab 12-34/");
@@ -192,16 +194,16 @@ async function correr() {
   marcaCaixa(el("fatura")).click();
   p = await partilhar();
   ok("Com a omissão da fatura, parte", !!p);
-  ok("Corpo: interno, externo e a garantia logo por baixo", p && p.text.includes("Serviço interno: 26000124\nServiço externo: AB12-34\nGarantia: Em garantia"), p && p.text.slice(0, 200));
-  ok("O assunto não leva o serviço externo", p && p.title === "26000124 · RECOLHA · DOMESTICO", p && p.title);
-  ok("Os ficheiros levam o número interno", nomes(p).every((n) => n.startsWith("26000124_")), nomes(p));
+  ok("Corpo: interno, externo e a garantia logo por baixo", p && p.text.includes("Serviço interno: 000124\nServiço externo: AB12-34\nGarantia: Em garantia"), p && p.text.slice(0, 200));
+  ok("O assunto não leva o serviço externo", p && p.title === "000124 · RECOLHA · DOMESTICO", p && p.title);
+  ok("Os ficheiros levam o número interno", nomes(p).every((n) => n.startsWith("000124_")), nomes(p));
   await novo();
   classificar("Doméstico", "Entrega", "Fora de Garantia");
   ok("Fora de garantia o campo também aparece", !el("campo-num-externo").hidden);
-  escrever("num", "26000129"); escrever("tec", "Teste"); escrever("num-externo", "XY9");
+  escrever("num", "000129"); escrever("tec", "Teste"); escrever("num-externo", "XY9");
   await juntar("Fotografias");
   p = await partilhar();
-  ok("Fora de garantia o externo segue, com a garantia por baixo", p && p.text.includes("Serviço interno: 26000129\nServiço externo: XY9\nGarantia: Fora de garantia"), p && p.text.slice(0, 160));
+  ok("Fora de garantia o externo segue, com a garantia por baixo", p && p.text.includes("Serviço interno: 000129\nServiço externo: XY9\nGarantia: Fora de garantia"), p && p.text.slice(0, 160));
   await novo();
   ok("Novo registo apaga o serviço externo", el("num-externo").value === "");
   classificar("Hotelaria", "Recolha", "Fora de Garantia");
@@ -231,7 +233,7 @@ async function correr() {
 
   titulo("Entrada Oficina (etiqueta obrigatória)");
   classificar("Doméstico", "Entrada Oficina", "Fora de Garantia");
-  escrever("num", "26000125"); escrever("tec", "Teste");
+  escrever("num", "000125"); escrever("tec", "Teste");
   await juntar("Fotografias");
   p = await partilhar();
   ok("Sem etiqueta não parte", !p);
@@ -243,7 +245,7 @@ async function correr() {
 
   titulo("Vários equipamentos");
   classificar("Doméstico", "Entrega", "Fora de Garantia");
-  escrever("num", "26000126"); escrever("tec", "Teste");
+  escrever("num", "000126"); escrever("tec", "Teste");
   el("eq-mais").click();
   await esperar(150);
   await juntar("Fotografias");
@@ -275,7 +277,7 @@ async function correr() {
 
   titulo("O que fica escondido não é enviado");
   classificar("Doméstico", "Entrega", "Em Garantia");
-  escrever("num", "26000127"); escrever("tec", "Teste");
+  escrever("num", "000127"); escrever("tec", "Teste");
   await juntar("Fotografias");
   await juntar("Fatura");
   botao("garantias", "Fora de Garantia").click();
@@ -285,7 +287,7 @@ async function correr() {
 
   titulo("Descrição por fotografia");
   classificar("Doméstico", "Recolha", "Fora de Garantia");
-  escrever("num", "26000128"); escrever("tec", "Teste");
+  escrever("num", "000128"); escrever("tec", "Teste");
   await juntar("Fotografias");
   ok("Por omissão não há campos", d.querySelectorAll(".nota-campo").length === 0);
   el("notas-fotos").click();
@@ -306,7 +308,7 @@ async function correr() {
 
   titulo("Equipamento emprestado");
   classificar("Doméstico", "Recolha", "Fora de Garantia");
-  escrever("num", "26000140"); escrever("tec", "Teste");
+  escrever("num", "000140"); escrever("tec", "Teste");
   ok("A Recolha pergunta pelo emprestado", !!el("emp-marca") && !el("emp-marca").checked);
   await juntar("Fotografias");
   el("emp-marca").click();
@@ -318,8 +320,8 @@ async function correr() {
   await juntar("Fotografias do emprestado", 2);
   p = await partilhar();
   ok("Parte com o emprestado", !!p);
-  ok("Ficheiros do emprestado à parte", p && nomes(p).includes("26000140_recolha_dom_fg_emprestado_etiqueta_01.jpg")
-     && nomes(p).includes("26000140_recolha_dom_fg_emprestado_02.jpg"), nomes(p));
+  ok("Ficheiros do emprestado à parte", p && nomes(p).includes("000140_recolha_dom_fg_emprestado_etiqueta_01.jpg")
+     && nomes(p).includes("000140_recolha_dom_fg_emprestado_02.jpg"), nomes(p));
   ok("Corpo: linha do emprestado", p && p.text.includes("Equipamento emprestado: 1 etiqueta, 2 fotografias"));
   await novo();
   ok("Novo registo desliga o emprestado", E("estado.emprestado.ativo === false && estado.emprestado.fotos.length === 0"));
@@ -333,7 +335,7 @@ async function correr() {
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   ok("A Recolha não pede estado", el("card-estado").hidden);
   botao("momentos", "Reparação").click();
-  escrever("num", "26000150"); escrever("tec", "Teste");
+  escrever("num", "000150"); escrever("tec", "Teste");
   ok("A Reparação pede estado", !el("card-estado").hidden);
   await juntar("Fotografias");
   p = await partilhar();
@@ -347,11 +349,11 @@ async function correr() {
   ok("«Outro» pede o detalhe", !p && el("detalhe-err").classList.contains("show"));
   escrever("motivo-detalhe", "cliente quer pensar");
   p = await partilhar();
-  ok("Assunto leva PENDENTE", p && p.title === "26000150 · REPARACAO LOCAL · DOMESTICO · PENDENTE", p && p.title);
+  ok("Assunto leva PENDENTE", p && p.title === "000150 · REPARACAO LOCAL · DOMESTICO · PENDENTE", p && p.title);
   ok("Corpo: estado, motivo e detalhe", p && p.text.includes('Estado: Não resolvido — Outro ("cliente quer pensar")'), p && p.text.slice(0, 300));
   await novo();
   classificar("Doméstico", "Montagem", "Fora de Garantia");
-  escrever("num", "26000151"); escrever("tec", "Teste");
+  escrever("num", "000151"); escrever("tec", "Teste");
   await juntar("Etiquetas"); await juntar("Fotografias");
   E("actualizarBotaoEnviar()");
   ok("Botão sem cor enquanto falta o estado", el("send").classList.contains("incompleto"));
@@ -360,7 +362,7 @@ async function correr() {
   ok("Botão com cor quando está completo", !el("send").classList.contains("incompleto"));
   ok("Resolvido não pede motivo", el("campo-motivo").hidden);
   p = await partilhar();
-  ok("Resolvido: assunto sem PENDENTE", p && p.title === "26000151 · MONTAGEM · DOMESTICO", p && p.title);
+  ok("Resolvido: assunto sem PENDENTE", p && p.title === "000151 · MONTAGEM · DOMESTICO", p && p.title);
   ok("Corpo: «Estado: Resolvido»", p && p.text.includes("Estado: Resolvido\n"));
   await novo();
   ok("Novo registo limpa o estado", E("estado.estadoServico === null") && el("motivo").value === "");
@@ -384,7 +386,7 @@ async function correr() {
   ok("O botão passa a «Enviar registo»", el("send-txt").textContent === "Enviar registo");
   ok("Aparecem a loja e o código, sem os endereços para copiar", !el("envio-direto").hidden && el("lojas").hidden);
   classificar("Doméstico", "Recolha", "Fora de Garantia");
-  escrever("num", "26000160"); escrever("tec", "Teste");
+  escrever("num", "000160"); escrever("tec", "Teste");
   await juntar("Fotografias", 2);
   el("send").click(); await esperar(300);
   ok("Sem loja nem código, não envia", pedidos.length === 0 && el("loja-err").classList.contains("show") && el("codigo-err").classList.contains("show"));
@@ -399,8 +401,8 @@ async function correr() {
   el("send").click(); await esperar(500);
   const dados = pedidos[1] && pedidos[1].dados;
   ok("Envia a loja, o código, o assunto e as fotografias", !!dados && dados.get("loja") === "porto" && dados.get("codigo") === "segredo"
-     && dados.get("assunto") === "26000160 · RECOLHA · DOMESTICO" && dados.getAll("fotos[]").length === 2
-     && dados.getAll("fotos[]")[0].name === "26000160_recolha_dom_fg_01.jpg");
+     && dados.get("assunto") === "000160 · RECOLHA · DOMESTICO" && dados.getAll("fotos[]").length === 2
+     && dados.getAll("fotos[]")[0].name === "000160_recolha_dom_fg_01.jpg");
   ok("Ecrã final: «Enviado», sem «Partilhar outra vez»", el("done-titulo").textContent === "Enviado" && el("retry").hidden
      && el("done-msg").textContent.includes("Porto"));
   ok("Não houve partilha", !partilha);

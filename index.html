@@ -452,6 +452,7 @@
     font-size: 12px; color: var(--muted);
   }
   .dest b { color: var(--ink-2); font-weight: 600; }
+  .em-falta { color: var(--ink-2); text-align: left; }
   #aviso-tamanho { color: var(--red-txt); font-weight: 600; margin-bottom: 2px; }
   .totals strong.pesado { color: var(--red-txt); }
 
@@ -697,13 +698,13 @@
     <!-- Serviço ------------------------------------------------------------->
     <section class="card">
       <div class="card-head"><h2>Serviço</h2></div>
-      <p class="card-hint" id="num-hint">Letras maiúsculas, algarismos e traços, sem espaços.</p>
+      <p class="card-hint" id="num-hint">6 algarismos, sem espaços, com os zeros do início (ex.: 123456 ou 000006).</p>
 
       <div class="field">
         <label class="lbl" for="num" id="num-lbl">Número do serviço</label>
-        <input id="num" type="text" autocomplete="off" autocapitalize="characters"
-               placeholder="Ex.: 26000123" aria-describedby="num-err">
-        <p class="err" role="alert" id="num-err">Indica o número do serviço.</p>
+        <input id="num" type="text" inputmode="numeric" maxlength="6" autocomplete="off"
+               placeholder="Ex.: 000006" aria-describedby="num-err">
+        <p class="err" role="alert" id="num-err">O número do serviço tem 6 algarismos (ex.: 123456 ou 000006).</p>
         <div id="dispensa-numero" hidden></div>
       </div>
 
@@ -877,6 +878,7 @@
       </svg>
       <span id="send-txt">Partilhar registo</span>
     </button>
+    <p class="dest em-falta" id="em-falta" hidden></p>
     <p class="dest" id="aviso-tamanho" hidden>
       Registo pesado — pode ser recusado pelo email. Divide em dois.
     </p>
@@ -2410,7 +2412,10 @@ function redesenhar() {
 
 // O botão só ganha cor quando o registo está completo.
 function actualizarBotaoEnviar() {
-  $("send").classList.toggle("incompleto", !validar(false));
+  const faltas = validar(false);
+  $("send").classList.toggle("incompleto", faltas.length > 0);
+  $("em-falta").hidden = faltas.length === 0;
+  $("em-falta").textContent = "Falta: " + faltas.join(", ") + ".";
 }
 // Qualquer toque ou escrita pode completar o registo; depois dos outros handlers.
 ["input", "change", "click"].forEach((ev) =>
@@ -2485,10 +2490,10 @@ function actualizarCampoNumero() {
   // A dica diz o que fazer quando o número ainda não existe, no sítio onde
   // essa dúvida aparece.
   $("num-hint").textContent = marcaMomento("numeroDispensavel")
-    ? "Letras maiúsculas, algarismos e traços, sem espaços. Ainda sem número? Marca a caixa por baixo e indica o cliente e a morada."
+    ? "6 algarismos, sem espaços, com os zeros do início (ex.: 123456 ou 000006). Ainda sem número? Marca a caixa por baixo e indica o cliente e a morada."
     : marcaMomento("numeroOpcional")
-      ? "Letras maiúsculas, algarismos e traços, sem espaços. Pode ficar vazio."
-      : "Letras maiúsculas, algarismos e traços, sem espaços.";
+      ? "6 algarismos, sem espaços, com os zeros do início (ex.: 123456 ou 000006). Pode ficar vazio."
+      : "6 algarismos, sem espaços, com os zeros do início (ex.: 123456 ou 000006).";
   const obrigatorio = numeroObrigatorio();
   const dispensado = numeroDispensado();
   // Onde pode haver um serviço externo, este é o interno — o externo tem campo próprio.
@@ -2497,7 +2502,7 @@ function actualizarCampoNumero() {
     : dispensado ? `Número do serviço${interno} (omitido)` : `Número do serviço${interno} (opcional)`;
   $("campo-num-externo").hidden = !temServicoExterno();
   $("num").placeholder = dispensado ? "omitido"
-    : obrigatorio ? "Ex.: 26000123" : "ainda sem número";
+    : obrigatorio ? "Ex.: 000006" : "ainda sem número";
   if (!obrigatorio) marcar("num", "num-err", false);
 
   $("campo-recebido").hidden = !marcaMomento("campoRecebidoPor");
@@ -2612,7 +2617,9 @@ function validar(mostrar = true) {
   const tec = $("tec").value.trim();
 
   // Pelo menos uma letra ou algarismo: só traços não identificam serviço nenhum.
-  const numMal = numeroObrigatorio() && !/^(?=.*[A-Z0-9])[A-Z0-9-]+$/.test(num);
+  // O interno tem sempre 6 algarismos (zeros do início incluídos). Opcional
+  // vazio passa; preenchido tem de estar certo, senão ia um número errado.
+  const numMal = (numeroObrigatorio() || num !== "") && !/^\d{6}$/.test(num);
   // A fatura, onde é obrigatória, só pode faltar com a dispensa marcada.
   const fatMal = faturaObrigatoria()
     && !estado.fatura.some((f) => f.estado === "pronta")
@@ -2648,12 +2655,21 @@ function validar(mostrar = true) {
     : -1;
   const faltaEtq = !fotMal && !faltaEq && semEtq >= 0;
 
-  if (!mostrar) return !(numMal || cliMal || morMal || preMal || tecMal || momMal || srvMal || garMal
-           || fotMal || faltaEq || faltaEtq || fatMal || estMal || motMal || detMal || empMal);
-
+  if (!mostrar) {
+    const etq = semEtq + 1;
+    return [
+      [srvMal, "tipo"], [momMal, "momento"], [garMal, "garantia"],
+      [numMal, "número do serviço"], [cliMal, "nome do cliente"], [morMal, "morada"],
+      [tecMal, "registado por"], [estMal, "estado do serviço"], [motMal, "motivo"],
+      [detMal, "detalhe do motivo"], [preMal, "o que o cliente pretende"],
+      [fatMal, "fatura"], [empMal, "fotografias do emprestado"],
+      [fotMal, "fotografias"], [faltaEq, `fotografias do equipamento ${vazio + 1}`],
+      [faltaEtq, estado.equipamentos.length > 1 ? `etiqueta do equipamento ${etq}` : "etiqueta"],
+    ].filter(([mal]) => mal).map(([, nome]) => nome);
+  }
   $("num-err").textContent = marcaMomento("numeroDispensavel")
-    ? "Indica o número do serviço, ou marca que não o tens."
-    : "Indica o número do serviço.";
+    ? "O número do serviço tem 6 algarismos (ex.: 123456 ou 000006), ou marca que não o tens."
+    : "O número do serviço tem 6 algarismos (ex.: 123456 ou 000006).";
   marcar("num", "num-err", numMal);
   marcar(null, "fat-err", fatMal);
   marcar("cliente", "cliente-err", cliMal);
@@ -3281,7 +3297,9 @@ const limparNumero = (campo) => {
 };
 
 $("num").addEventListener("input", (e) => {
-  limparNumero(e.target);
+  // O interno é só algarismos: o resto sai à medida que se escreve ou cola.
+  const so = e.target.value.replace(/\D/g, "").slice(0, 6);
+  if (so !== e.target.value) e.target.value = so;
   const n = e.target.value.length;
   e.target.classList.toggle("longo", n > 12 && n <= 17);
   e.target.classList.toggle("enorme", n > 17);
