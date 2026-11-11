@@ -52,7 +52,7 @@ function ok(nome, condicao, detalhe) {
 }
 
 /* ── Ajudantes: usam a app como o técnico a usa ─────────────────────────── */
-let partilha = null, ultimoCampo = null, cliqueOriginal = null;
+let urlReal = "", partilha = null, ultimoCampo = null, cliqueOriginal = null;
 
 function preparar() {
   w = quadro.contentWindow;
@@ -68,6 +68,9 @@ function preparar() {
   };
   E("(memoria.ler = () => '', memoria.guardar = () => {}, 0)");
   E("(CONFIG.CORTE = false, 0)");   // o corte espera por um toque: testa-se à parte
+  // Guarda o endereço real (para o teste da CSP) e testa a partilha por omissão.
+  urlReal = E("CONFIG.ENVIO_URL");
+  E("(CONFIG.ENVIO_URL = '', desenharLojas(), 0)");
   w.navigator.canShare = () => true;
   w.navigator.share = async (dados) => { partilha = dados; };
   cliqueOriginal = w.HTMLInputElement.prototype.click;
@@ -359,7 +362,7 @@ async function correr() {
   titulo("Envio direto pelo servidor");
   // Com o endereço preenchido, a CSP tem de deixar ligar ao servidor — senão
   // o browser bloqueia todos os envios sem dizer porquê.
-  const urlEnvio = E("CONFIG.ENVIO_URL");
+  const urlEnvio = urlReal;
   const csp = d.querySelector('meta[http-equiv="Content-Security-Policy"]').content;
   const connect = (csp.match(/connect-src([^;]*)/) || ["", ""])[1];
   ok("A CSP deixa ligar ao servidor de envio", !urlEnvio || connect.includes(new URL(urlEnvio).origin),
