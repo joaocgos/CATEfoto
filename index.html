@@ -44,6 +44,9 @@
     --bg:         #F7F7F8;
     --card:       #FFFFFF;
     --ok:         #14804A;
+    --ok-soft:    rgba(20, 128, 74, 0.09);
+    --warn:       #9A5B00;   /* âmbar para texto: 5,6:1 sobre o cartão claro */
+    --warn-soft:  rgba(214, 140, 0, 0.12);
     --shadow:     0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
     --r-lg:       18px;
     --r-md:       12px;
@@ -59,6 +62,9 @@
       --bg:       #121213;
       --card:     #1C1C1E;
       --ok:       #3DD68C;
+      --ok-soft:  rgba(61, 214, 140, 0.14);
+      --warn:     #F0B04A;
+      --warn-soft: rgba(240, 176, 74, 0.14);
       --shadow:   0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
     }
   }
@@ -163,7 +169,7 @@
   /* ── Campos ───────────────────────────────────────────────────────────── */
   .field { margin-bottom: 16px; }
   .field:last-child { margin-bottom: 0; }
-  label.lbl {
+  .lbl {
     display: block; font-size: 13px; font-weight: 600;
     color: var(--ink-2); margin-bottom: 7px;
   }
@@ -347,11 +353,26 @@
 
   .notas-fotos-pergunta { margin: 0; }
   /* Estado do serviço: três botões numa linha, mais baixos que os dos passos. */
-  .segmented.estados { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .segmented.estados .seg:last-child { grid-column: auto; }
-  .segmented.estados .seg { min-height: 64px; padding: 12px 10px; justify-content: center; }
-  .segmented.estados .seg-t { font-size: 14px; }
-  .segmented.estados .seg[aria-pressed="true"]::after { top: 6px; right: 8px; font-size: 13px; }
+  /* Estado do serviço: uma linha por estado, ícone à esquerda. Em três
+     colunas, «Não resolvido» partia-se em duas linhas e os outros não. */
+  .segmented.estados { grid-template-columns: 1fr; gap: 8px; }
+  .segmented.estados .seg {
+    flex-direction: row; align-items: center; gap: 12px;
+    min-height: 52px; padding: 10px 14px;
+  }
+  .segmented.estados .seg[aria-pressed="true"]::after { top: 50%; transform: translateY(-50%); }
+  /* O vermelho da marca é a seleção em toda a app, mas aqui lia-se como erro:
+     cada estado tem a sua cor. */
+  .segmented.estados .seg[data-chave="resolvido"][aria-pressed="true"] {
+    border-color: var(--ok); background: var(--ok-soft); color: var(--ok);
+  }
+  .segmented.estados .seg[data-chave="resolvido"][aria-pressed="true"] svg,
+  .segmented.estados .seg[data-chave="resolvido"][aria-pressed="true"]::after { stroke: var(--ok); color: var(--ok); }
+  .segmented.estados .seg[data-chave="parcial"][aria-pressed="true"] {
+    border-color: var(--warn); background: var(--warn-soft); color: var(--warn);
+  }
+  .segmented.estados .seg[data-chave="parcial"][aria-pressed="true"] svg,
+  .segmented.estados .seg[data-chave="parcial"][aria-pressed="true"]::after { stroke: var(--warn); color: var(--warn); }
   #campo-motivo { margin-top: 14px; }
   input.nota-campo { height: 44px; font-size: 14px; }
 
@@ -729,29 +750,6 @@
       </div>
     </section>
 
-    <!-- Estado do serviço: só nos momentos com estadoServico ---------------->
-    <section class="card" id="card-estado" hidden>
-      <div class="card-head"><h2>Estado do serviço</h2></div>
-      <p class="card-hint">Como ficou o serviço no fim desta visita.</p>
-      <div class="segmented estados" id="estados" role="group" aria-label="Estado do serviço"></div>
-      <p class="err" role="alert" id="est-err">Indica como ficou o serviço.</p>
-      <div id="campo-motivo" hidden>
-        <div class="field">
-          <label class="lbl" for="motivo">Motivo</label>
-          <select id="motivo" aria-describedby="motivo-err">
-            <option value="">Escolhe o motivo</option>
-          </select>
-          <p class="err" role="alert" id="motivo-err">Escolhe o motivo.</p>
-        </div>
-        <div class="field">
-          <label class="lbl" for="motivo-detalhe" id="detalhe-lbl">Detalhe (opcional)</label>
-          <input id="motivo-detalhe" type="text" autocomplete="off" maxlength="140"
-                 placeholder="Ex.: falta a placa eletrónica" aria-describedby="detalhe-err">
-          <p class="err" role="alert" id="detalhe-err">Explica o motivo.</p>
-        </div>
-      </div>
-    </section>
-
     <!-- O que o cliente pretende: só nos momentos que o pedem --------------->
     <section class="card" id="card-pretendido" hidden>
       <div class="card-head"><h2>O que o cliente pretende</h2></div>
@@ -803,6 +801,29 @@
     <!-- Equipamento emprestado: Recolha e Entrega (marca emprestimo) --------->
     <div id="emprestado"></div>
     <p class="err" role="alert" id="emp-err">Junta a etiqueta ou fotografias do emprestado, ou desmarca a pergunta.</p>
+
+    <!-- Estado do serviço: no fim, que é quando se sabe (estadoServico) ----->
+    <section class="card" id="card-estado" hidden>
+      <div class="card-head"><h2>Estado do serviço</h2></div>
+      <p class="card-hint">Como ficou o serviço no fim desta visita.</p>
+      <div class="segmented estados" id="estados" role="group" aria-label="Estado do serviço"></div>
+      <p class="err" role="alert" id="est-err">Indica como ficou o serviço.</p>
+      <div id="campo-motivo" hidden>
+        <div class="field">
+          <label class="lbl" for="motivo">Motivo</label>
+          <select id="motivo" aria-describedby="motivo-err">
+            <option value="">Escolhe o motivo</option>
+          </select>
+          <p class="err" role="alert" id="motivo-err">Escolhe o motivo.</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="motivo-detalhe" id="detalhe-lbl">Detalhe (opcional)</label>
+          <input id="motivo-detalhe" type="text" autocomplete="off" maxlength="140"
+                 placeholder="Ex.: falta a placa eletrónica" aria-describedby="detalhe-err">
+          <p class="err" role="alert" id="detalhe-err">Explica o motivo.</p>
+        </div>
+      </div>
+    </section>
 
     <!-- Observações --------------------------------------------------------->
     <section class="card">
@@ -2144,6 +2165,15 @@ function desenharEmprestado() {
 
   const cartao = document.createElement("section");
   cartao.className = "card";
+  // Com o cartão aberto a pergunta sai do ecrã: o título diz de que máquina são.
+  if (estado.emprestado.ativo) {
+    const cab = document.createElement("div");
+    cab.className = "card-head";
+    const h2 = document.createElement("h2");
+    h2.textContent = "Equipamento emprestado";
+    cab.appendChild(h2);
+    cartao.appendChild(cab);
+  }
   const rotulo = document.createElement("label");
   rotulo.className = "dispensa-marca notas-fotos-pergunta";
   const marca = document.createElement("input");
@@ -2873,12 +2903,14 @@ const lojaEscolhida = () => LOJAS.find((l) => l.chave === lerGuardado("catefoto.
 
 async function enviar() {
   if (!envioDireto()) return partilhar();
-  if (!validar()) return;
+  // Loja e código marcados na mesma ronda que o resto do formulário: senão o
+  // técnico corrigia tudo e só depois descobria que faltava a loja.
   const loja = lojaEscolhida();
   const codigo = $("codigo-envio").value.trim();
   marcar(null, "loja-err", !loja);
   $("codigo-err").textContent = "Escreve o código de envio.";
   marcar("codigo-envio", "codigo-err", !codigo);
+  if (!validar()) return;
   if (!loja || !codigo) { levarA($("envio-direto"), "center"); return; }
   if (navigator.onLine === false) {
     aviso("Sem rede. Partilha pela app de email: o email sai quando a rede voltar.");
