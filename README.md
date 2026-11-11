@@ -70,8 +70,7 @@ o Android chega a mostrá-lo diretamente no menu de partilha.
 ## Como se usa
 
 O próprio ecrã inicial tem um cartão **Como usar**, fechado por omissão, que se abre e
-se lê ali mesmo: o aviso de que partilhar não envia, o passo a passo e o envio para
-a loja. O resto (o que cada momento pede, quando omitir, boas fotografias, limites
+se lê ali mesmo: o passo a passo, o envio e o que fazer sem rede. O resto (o que cada momento pede, quando omitir, boas fotografias, limites
 e problemas frequentes) vive só no `manual.html`, que é a fonte única dessas regras.
 
 As regras que dependem do momento também aparecem no cartão onde a dúvida surge: a
@@ -86,8 +85,9 @@ dica do número do serviço, das etiquetas e da fatura diz quando se pode omitir
 3. Fotografar as **etiquetas do equipamento** (marca, modelo, número de série).
    Cabem várias, para equipamentos com mais do que uma etiqueta.
 4. Fotografar o **equipamento** — pela câmara ou escolhendo da galeria.
-5. **Partilhar registo** → abre a partilha do telemóvel → escolher o email →
-   **carregar em enviar dentro da app de email**.
+5. **Enviar registo** → o registo segue pelo servidor da CATE para a caixa da
+   loja do técnico, e aparece o ecrã **Enviado**. Sem rede ou se falhar:
+   «Sem rede? Partilhar pela app de email» (ver *Envio direto*).
 
 O corpo leva o técnico, a data e a hora a que cada fotografia foi realmente
 tirada. O assunto vai no formato `26000123 · RECOLHA · DOMESTICO` — ver
@@ -105,14 +105,35 @@ na app de email. E mesmo sem assunto nenhum, o registo continua identificável �
 o corpo começa pelo serviço e pelo momento, e o número do serviço vai no nome
 de cada ficheiro.
 
-### O botão partilha, não envia
+### Envio direto (servidor da CATE)
+
+O botão **Enviar registo** manda as fotografias, o assunto e o corpo para
+`https://cate.com.pt/catefoto/enviar.php` (`CONFIG.ENVIO_URL`), um script PHP no
+alojamento cPanel da CATE. O script envia o email por `info@cate.com.pt` para a
+caixa da loja escolhida e só responde «ok» depois de o servidor de email o
+aceitar. Só aí a app mostra **Enviado**, sem «Partilhar outra vez» (duplicava).
+
+- **Da primeira vez** o técnico escolhe a loja e escreve o **código de envio**;
+  ficam guardados no telemóvel (`catefoto.loja`, `catefoto.codigo`).
+- **O servidor decide o destino**: a app manda só a chave da loja; os endereços
+  estão no `config.php` do servidor.
+- **Se falhar** (sem rede, código errado, registo grande demais, limite de envios),
+  a app diz porquê e leva à ligação «Sem rede? Partilhar pela app de email». Nada
+  se perde: as fotografias e os campos ficam até *Novo registo*. Nesse caminho a
+  app copia o endereço da loja escolhida, para colar no «Para».
+- Instalação, código de acesso e limites: `servidor/LEIA-ME.md`. O `config.php`
+  (com o código) nunca entra no repositório.
+- Mudar o endereço obriga a mudar também o `connect-src` da CSP; o `teste.html`
+  falha se não coincidirem.
+
+### A partilha (caminho de recurso) não envia
 
 Uma página web não consegue enviar um email sozinha nem saber se ele chegou a
 sair. O que faz é entregar as fotografias à app de email, com o texto
 preenchido — o envio tem mesmo de ser confirmado lá dentro.
 
-Por isso o botão diz *Partilhar registo* e o ecrã final diz *Falta enviar o
-email*. Nenhum dos dois promete o que a página não pode garantir. O ecrã final
+Por isso a ligação diz *Partilhar pela app de email* e o ecrã final diz *Falta
+enviar o email*. Nenhum dos dois promete o que a página não pode garantir. O ecrã final
 traz um recibo do que ficou empacotado (`26000123 · RECOLHA · DOMESTICO · 5
 fotografias`), para o técnico confirmar o que vai enviar, e um ícone neutro: é um
 estado pendente, não um erro.
@@ -468,18 +489,12 @@ enviado. Convém abri-lo antes de cada publicação.
 
 ---
 
-## Porque é que não envia sozinho
+## Ligações a servidores
 
-A página não consegue enviar um email nem saber se ele chegou a sair, e a
-política de segurança (CSP) proíbe de propósito ligações a servidores: mesmo que
-entrasse código indesejado, não conseguiria mandar as fotografias nem os dados
-para lado nenhum. Já existiu uma opção de envio automático, mas nunca funcionou
-por causa dessa mesma política, e foi retirada.
-
-Se um dia fizer falta, seria um projeto à parte: um servidor que receba as
-fotografias e as reencaminhe, uma conta de serviço de email, uma chave guardada
-no servidor e o `connect-src` da CSP aberto só para esse endereço (hoje só
-admite `data:`, para o corte automático).
+A CSP só deixa a página ligar-se a um sítio: o script de envio da CATE
+(`connect-src data: https://cate.com.pt/catefoto/enviar.php`; o `data:` é do corte
+automático). Mesmo que entrasse código indesejado, não conseguiria mandar as
+fotografias nem os dados para outro lado.
 
 ---
 
@@ -512,14 +527,18 @@ nome do ficheiro e do assunto, sem depender de nada do lado da página.
 
 ## Segurança e privacidade
 
-A app não tem servidor, não tem base de dados e não guarda fotografias em lado
-nenhum: elas existem na memória do telemóvel até serem entregues à app de email.
+A app não tem base de dados e não guarda fotografias em lado nenhum: existem na
+memória do telemóvel até serem enviadas. O script de envio (`servidor/enviar.php`)
+também não as guarda: monta o email, entrega-o ao servidor de email da CATE e
+esquece-as. Só aceita pedidos da app publicada, com o código de envio, para as
+caixas das lojas do `config.php`, e limita os envios por IP e por hora.
 O único código de terceiros é o **OpenCV.js** do corte automático, carregado só
 quando é preciso, de um endereço fixo no jsDelivr e com verificação de
 integridade (SRI): se o ficheiro mudar, o browser recusa-o. A CSP só autoriza
 esse ficheiro exato. Para ele correr, a CSP permite `unsafe-eval` e
 `wasm-unsafe-eval`, e `connect-src data:` (o OpenCV lê o seu próprio WebAssembly,
-embutido no ficheiro). Ligações a servidores continuam bloqueadas.
+embutido no ficheiro). A única ligação a um servidor permitida é a do script de
+envio da CATE.
 
 **As fotografias não levam a morada do cliente.** A recompressão passa a imagem
 por um `canvas`, o que descarta todos os metadados do original — incluindo as

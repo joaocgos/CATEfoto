@@ -621,7 +621,7 @@
       </summary>
       <div class="ajuda-corpo">
         <div class="ajuda-aviso">
-          <p><b>Partilhar não envia o email.</b> O registo só chega à loja quando carregares em <b>enviar</b> dentro da app de email. Se fechaste o email sem enviar, o ecrã final tem <b>Partilhar outra vez</b>.</p>
+          <p><b>Só está enviado quando vires «Enviado».</b> Sem rede, usa «Sem rede? Partilhar pela app de email» e carrega em enviar dentro do email.</p>
         </div>
 
         <h2>Passo a passo</h2>
@@ -629,15 +629,13 @@
           <li>Escolhe o <b>tipo de serviço</b> e o <b>momento</b>, e indica a <b>garantia</b> (no Orçamento não há).</li>
           <li>Escreve o <b>número do serviço</b> (letras maiúsculas, algarismos e traços, sem espaços) e o teu nome.</li>
           <li>Tira as fotografias com <b>Câmara</b>, ou escolhe-as da <b>Galeria</b>. O ✕ da miniatura apaga uma.</li>
-          <li>Toca em <b>Partilhar registo</b> e escolhe a app de email.</li>
-          <li>No email, carrega em <b>enviar</b>.</li>
+          <li>Toca em <b>Enviar registo</b> e espera pelo ecrã <b>Enviado</b>.</li>
         </ol>
 
-        <h2>Enviar para a tua loja</h2>
+        <h2>Da primeira vez</h2>
         <ol>
-          <li>No fim do formulário, no cartão <b>Enviar para</b>, toca em <b>copiar</b> na linha da tua loja.</li>
-          <li>Partilha o registo e, no email, cola o endereço em «Para».</li>
-          <li>O assunto costuma vir preenchido. Se vier vazio, copia-o do mesmo cartão.</li>
+          <li>No fim do formulário, no cartão <b>Enviar para</b>, escolhe a tua <b>loja</b>.</li>
+          <li>Escreve o <b>código de envio</b> que a loja te deu. Fica guardado no telemóvel.</li>
         </ol>
 
         <p class="ajuda-mais">
@@ -2982,6 +2980,12 @@ async function partilhar() {
   const temEtiquetas = estado.equipamentos
     .some((e) => e.etiquetas.some((f) => f.estado === "pronta"));
 
+  // Com o envio direto, o cartão já não mostra os endereços: copia-se o da loja
+  // escolhida, para colar no «Para». Sem await: a partilha tem de abrir ainda
+  // dentro do toque.
+  const lojaP = envioDireto() && lojaEscolhida();
+  if (lojaP && navigator.clipboard) navigator.clipboard.writeText(lojaP.endereco).catch(() => {});
+
   $("send").disabled = true;
   try {
     if (navigator.canShare && navigator.canShare({ files: ficheiros })) {
@@ -2993,8 +2997,9 @@ async function partilhar() {
       if (num && temEtiquetas) marcarEtiquetaEnviada(num, momento);
       concluir("Falta enviar o email",
                "A partilha só entregou as fotografias à app de email. " +
-               "Abre-a e carrega em enviar — só aí o registo chega " +
-               destinoDescrito() + ".");
+               (lojaP ? `Cola no «Para» o endereço da loja ${lojaP.nome}, que ficou copiado, e carrega em enviar. `
+                      : "Abre-a e carrega em enviar — só aí o registo chega " + destinoDescrito() + ". ") +
+               "Só aí o registo chega.");
       return;
     }
 
