@@ -2863,8 +2863,9 @@ function assuntoDoRegisto() {
 }
 
 // O envio direto está ligado quando há endereço do servidor e lojas.
-// Declaradas como funções (e não pelo objeto memoria, mais abaixo) porque
-// desenharLojas() corre antes de memoria existir.
+// Guardar no telemóvel. Em navegação privada o localStorage atira exceção:
+// perde-se a comodidade, não o funcionamento. Funções (e não const) porque
+// desenharLojas() as usa antes de chegar a esta parte do ficheiro.
 function lerGuardado(k) { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } }
 function gravarGuardado(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* sem persistência */ } }
 const envioDireto = () => !!CONFIG.ENVIO_URL && LOJAS.length > 0;
@@ -3269,18 +3270,6 @@ $("pretendido").addEventListener("input", (e) => {
   if (e.target.value.trim().length >= 3) marcar("pretendido", "pretendido-err", false);
 });
 
-// O nome do técnico fica guardado no telemóvel — escreve-se uma vez só.
-// Em navegação privada, ou com os dados de site bloqueados, o localStorage
-// atira exceção: aí perde-se só a comodidade, não o funcionamento da página.
-const memoria = {
-  ler(chave) {
-    try { return localStorage.getItem(chave) || ""; } catch (_) { return ""; }
-  },
-  guardar(chave, valor) {
-    try { localStorage.setItem(chave, valor); } catch (_) { /* sem persistência */ }
-  },
-};
-
 /* ─────────────────────────────────────────────────────────────────────────
    Registo das etiquetas já enviadas
 
@@ -3291,7 +3280,7 @@ const memoria = {
 const DIAS_MEMORIA = 180;
 
 function etiquetasEnviadas() {
-  try { return JSON.parse(memoria.ler("cate_etiquetas") || "{}"); } catch (_) { return {}; }
+  try { return JSON.parse(lerGuardado("cate_etiquetas") || "{}"); } catch (_) { return {}; }
 }
 
 function marcarEtiquetaEnviada(num, momento) {
@@ -3307,7 +3296,7 @@ function marcarEtiquetaEnviada(num, momento) {
     const quando = e && e.quando ? e.quando : e;
     if (new Date(quando).getTime() < limite) delete registo[chave];
   }
-  memoria.guardar("cate_etiquetas", JSON.stringify(registo));
+  gravarGuardado("cate_etiquetas", JSON.stringify(registo));
 }
 
 function etiquetaJaEnviada(num) {
@@ -3320,9 +3309,9 @@ function etiquetaJaEnviada(num) {
   return { data: d, tipoNome: t ? t.nome : "outro" };
 }
 
-$("tec").value = memoria.ler("cate_tecnico");
+$("tec").value = lerGuardado("cate_tecnico");
 $("tec").addEventListener("input", (e) => {
-  memoria.guardar("cate_tecnico", e.target.value.trim());
+  gravarGuardado("cate_tecnico", e.target.value.trim());
   if (e.target.value.trim().length >= 2) marcar("tec", "tec-err", false);
 });
 
@@ -3381,9 +3370,10 @@ $("send").addEventListener("click", enviar);
 $("again").addEventListener("click", recomeçar);
 
 // Nova tentativa com as mesmas fotografias, sem ter de repetir nada.
+// Só aparece depois de uma partilha (um envio confirmado esconde-o): repete-a.
 $("retry").addEventListener("click", () => {
   $("done").classList.remove("show");
-  enviar();
+  partilhar();
 });
 $("partilhar-app").addEventListener("click", partilhar);
 
