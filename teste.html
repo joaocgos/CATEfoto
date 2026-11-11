@@ -356,6 +356,44 @@ async function correr() {
   await novo();
   ok("Novo registo limpa o estado", E("estado.estadoServico === null") && el("motivo").value === "");
 
+  titulo("Envio direto pelo servidor");
+  let pedidos = [];
+  let respostaServidor = { status: 200, corpo: { ok: true } };
+  w.fetch = async (url, o) => {
+    pedidos.push({ url, dados: o.body });
+    return new w.Response(JSON.stringify(respostaServidor.corpo), { status: respostaServidor.status });
+  };
+  E("(localStorage.removeItem('catefoto.loja'), localStorage.removeItem('catefoto.codigo'), 0)");
+  E("(CONFIG.ENVIO_URL = 'https://exemplo.test/enviar.php', desenharLojas(), 0)");
+  ok("O botão passa a «Enviar registo»", el("send-txt").textContent === "Enviar registo");
+  ok("Aparecem a loja e o código, sem os endereços para copiar", !el("envio-direto").hidden && el("lojas").hidden);
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  escrever("num", "26000160"); escrever("tec", "Teste");
+  await juntar("Fotografias", 2);
+  el("send").click(); await esperar(300);
+  ok("Sem loja nem código, não envia", pedidos.length === 0 && el("loja-err").classList.contains("show") && el("codigo-err").classList.contains("show"));
+  botao("lojas-escolha", "Porto").click();
+  escrever("codigo-envio", "segredo");
+  ok("A loja e o código ficam guardados", E("localStorage.getItem('catefoto.loja')") === "porto" && E("localStorage.getItem('catefoto.codigo')") === "segredo");
+  respostaServidor = { status: 401, corpo: { ok: false, erro: "codigo" } };
+  el("send").click(); await esperar(500);
+  ok("Código errado: diz-o e não conclui", pedidos.length === 1 && el("codigo-err").textContent.includes("errado") && !el("done").classList.contains("show"));
+  respostaServidor = { status: 200, corpo: { ok: true } };
+  partilha = null;
+  el("send").click(); await esperar(500);
+  const dados = pedidos[1] && pedidos[1].dados;
+  ok("Envia a loja, o código, o assunto e as fotografias", !!dados && dados.get("loja") === "porto" && dados.get("codigo") === "segredo"
+     && dados.get("assunto") === "26000160 · RECOLHA · DOMESTICO" && dados.getAll("fotos[]").length === 2
+     && dados.getAll("fotos[]")[0].name === "26000160_recolha_dom_fg_01.jpg");
+  ok("Ecrã final: «Enviado», sem «Partilhar outra vez»", el("done-titulo").textContent === "Enviado" && el("retry").hidden
+     && el("done-msg").textContent.includes("Porto"));
+  ok("Não houve partilha", !partilha);
+  await novo();
+  ok("Novo registo mantém a loja e o código", el("codigo-envio").value === "segredo" && botao("lojas-escolha", "Porto").getAttribute("aria-pressed") === "true");
+  ok("Novo registo repõe «Partilhar outra vez»", !el("retry").hidden);
+  E("(CONFIG.ENVIO_URL = '', localStorage.removeItem('catefoto.loja'), localStorage.removeItem('catefoto.codigo'), desenharLojas(), 0)");
+  ok("Sem endereço volta à partilha", el("send-txt").textContent === "Partilhar registo" && el("envio-direto").hidden);
+
   titulo("Hora da fotografia (EXIF)");
   const exif = Uint8Array.from([
     0xFF,0xD8, 0xFF,0xE1,0x00,0x48, 0x45,0x78,0x69,0x66,0x00,0x00,

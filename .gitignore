@@ -5,3 +5,4 @@ desktop.ini
 
 # Configuracao local do Claude Code, nao pertence ao site
 .claude/
+servidor/config.php

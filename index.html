@@ -515,6 +515,10 @@
 
   /* ── Caixas das lojas, no rodapé ──────────────────────────────────────── */
   .lojas { margin: 0; }
+  #envio-direto .segmented .seg { min-height: 56px; justify-content: center; }
+  #envio-direto .segmented .seg:last-child { grid-column: auto; }
+  #envio-direto .field { margin-bottom: 14px; }
+  #partilhar-app { margin-top: 4px; min-height: 44px; }
   /* Parece uma linha de texto, mas a área tocável tem 44 px: as margens
      negativas devolvem o espaço, por isso o rodapé não cresce. */
   .dest-link {
@@ -815,6 +819,23 @@
         email. Se a app não preencher o assunto, copia-o também.</p>
       <div class="lojas" id="lojas"></div>
       <div class="lojas" id="assunto-linha" hidden></div>
+      <!-- Com CONFIG.ENVIO_URL: a app envia sozinha. Loja e código ficam
+           guardados no telemóvel. -->
+      <div id="envio-direto" hidden>
+        <div class="field">
+          <span class="lbl" id="loja-lbl">A tua loja</span>
+          <div class="segmented" id="lojas-escolha" role="group" aria-labelledby="loja-lbl"></div>
+          <p class="err" role="alert" id="loja-err">Escolhe a tua loja.</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="codigo-envio">Código de envio</label>
+          <input id="codigo-envio" type="text" autocomplete="off" autocapitalize="off"
+                 spellcheck="false" placeholder="Dado pela loja, escreve-se uma vez"
+                 aria-describedby="codigo-err">
+          <p class="err" role="alert" id="codigo-err">Escreve o código de envio.</p>
+        </div>
+        <button type="button" class="dest-link" id="partilhar-app">Sem rede? Partilhar pela app de email</button>
+      </div>
     </section>
 
     </div>
@@ -833,7 +854,7 @@
         <circle cx="18" cy="19" r="2.8"/>
         <path d="m8.5 10.6 7-3.7m-7 6.5 7 3.7"/>
       </svg>
-      Partilhar registo
+      <span id="send-txt">Partilhar registo</span>
     </button>
     <p class="dest" id="aviso-tamanho" hidden>
       Registo pesado — pode ser recusado pelo email. Divide em dois.
@@ -917,9 +938,14 @@ const CONFIG = {
   // a app preencher o destinatário. Endereços em pedaços, como o de cima.
   // Enquanto a lista estiver vazia, mostra-se o destino único acima.
   LOJAS: [
-    { nome: "Famalicão", caixa: "fotos.famalicao", dominio: "cate.com.pt" },
-    { nome: "Porto",     caixa: "fotos.porto",     dominio: "cate.com.pt" },
+    { chave: "famalicao", nome: "Famalicão", caixa: "fotos.famalicao", dominio: "cate.com.pt" },
+    { chave: "porto",     nome: "Porto",     caixa: "fotos.porto",     dominio: "cate.com.pt" },
   ],
+
+  // Envio direto pelo servidor da CATE (servidor/enviar.php, no cPanel). Vazio
+  // = sem envio direto: fica só a partilha pela app de email. Quem mudar isto
+  // tem de pôr a mesma origem no connect-src da CSP, no topo do ficheiro.
+  ENVIO_URL: "",
 
   // Limites POR equipamento. Um registo com três equipamentos permite três
   // vezes isto. Valores provisórios — ajustar com o uso real.
@@ -2836,7 +2862,78 @@ function assuntoDoRegisto() {
   return quem ? `${quem} · ${mom.marca} · ${srv.marca}` : "";
 }
 
+// O envio direto está ligado quando há endereço do servidor e lojas.
+// Declaradas como funções (e não pelo objeto memoria, mais abaixo) porque
+// desenharLojas() corre antes de memoria existir.
+function lerGuardado(k) { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } }
+function gravarGuardado(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* sem persistência */ } }
+const envioDireto = () => !!CONFIG.ENVIO_URL && LOJAS.length > 0;
+const lojaEscolhida = () => LOJAS.find((l) => l.chave === lerGuardado("catefoto.loja"));
+
 async function enviar() {
+  if (!envioDireto()) return partilhar();
+  if (!validar()) return;
+  const loja = lojaEscolhida();
+  const codigo = $("codigo-envio").value.trim();
+  marcar(null, "loja-err", !loja);
+  $("codigo-err").textContent = "Escreve o código de envio.";
+  marcar("codigo-envio", "codigo-err", !codigo);
+  if (!loja || !codigo) { levarA($("envio-direto"), "center"); return; }
+  if (navigator.onLine === false) {
+    aviso("Sem rede. Partilha pela app de email: o email sai quando a rede voltar.");
+    levarA($("partilhar-app"), "center");
+    return;
+  }
+
+  const num = $("num").value.trim();
+  const garantia = precisaGarantia() ? estado.garantia : null;
+  const dados = new FormData();
+  dados.append("codigo", codigo);
+  dados.append("loja", loja.chave);
+  dados.append("assunto", assuntoDoRegisto());
+  dados.append("corpo", construirCorpo(num, estado.momento, estado.servico, garantia));
+  construirFicheiros(num, estado.momento, estado.servico, garantia)
+    .forEach((f) => dados.append("fotos[]", f, f.name));
+  const temEtiquetas = estado.equipamentos
+    .some((e) => e.etiquetas.some((f) => f.estado === "pronta"));
+
+  $("send").disabled = true;
+  $("send-txt").textContent = "A enviar…";
+  const parar = new AbortController();
+  const relogio = setTimeout(() => parar.abort(), 120000);
+  let resposta = null;
+  try {
+    const r = await fetch(CONFIG.ENVIO_URL, { method: "POST", body: dados, signal: parar.signal });
+    resposta = { estado: r.status, ...(await r.json().catch(() => ({}))) };
+  } catch (_) {
+    resposta = null;
+  } finally {
+    clearTimeout(relogio);
+    $("send-txt").textContent = "Enviar registo";
+    desenhar();
+  }
+
+  if (resposta && resposta.ok) {
+    if (num && temEtiquetas) marcarEtiquetaEnviada(num, estado.momento);
+    concluir("Enviado", `O registo seguiu para a caixa da loja ${loja.nome}.`, true);
+    return;
+  }
+  if (resposta && resposta.erro === "codigo") {
+    $("codigo-err").textContent = "Código de envio errado. Confirma-o com a loja.";
+    marcar("codigo-envio", "codigo-err", true);
+    levarA($("codigo-envio"), "center");
+    return;
+  }
+  aviso(resposta && resposta.erro === "grande"
+    ? "Registo grande demais para enviar. Partilha pela app de email ou divide-o."
+    : resposta && resposta.erro === "limite"
+      ? "Demasiados envios seguidos. Espera um pouco ou partilha pela app de email."
+      : "Não foi possível enviar. Tenta outra vez ou partilha pela app de email.");
+  levarA($("partilhar-app"), "center");
+}
+
+// Partilha pela app de email (o caminho de sempre, e o de recurso).
+async function partilhar() {
   if (!validar()) return;
 
   const num = $("num").value.trim();
@@ -2905,7 +3002,11 @@ function reserva(ficheiros, assunto, corpo) {
     `?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
 }
 
-function concluir(titulo, mensagem) {
+function concluir(titulo, mensagem, enviado = false) {
+  // Só o servidor confirma um envio: aí não há «outra vez» (duplicava o email).
+  estado.enviado = enviado;
+  $("retry").hidden = enviado;
+  $("done-rodape").hidden = enviado;
   $("done-titulo").textContent = titulo;
   $("done-msg").textContent = mensagem;
   // O recibo: o que ficou empacotado, para o técnico poder confirmá-lo.
@@ -2921,6 +3022,9 @@ function concluir(titulo, mensagem) {
 }
 
 function recomeçar() {
+  estado.enviado = false;
+  $("retry").hidden = false;
+  $("done-rodape").hidden = false;
   todosItens().forEach((f) => {
     if (f && f.url) URL.revokeObjectURL(f.url);
   });
@@ -2960,6 +3064,8 @@ function recomeçar() {
   estado.garantia = null;
   document.querySelectorAll(".seg")
     .forEach((b) => b.setAttribute("aria-pressed", "false"));
+  // A loja não é do registo, é do técnico: volta a ficar marcada.
+  desenharLojas();
   actualizarCampoNumero();
   $("done").classList.remove("show");
   editando = null;
@@ -2979,6 +3085,7 @@ $("dest-mail").textContent = EMAIL_DESTINO;
 // isso mostram-se as duas com botão de copiar: o técnico copia a da sua loja e
 // cola-a no "Para" do email.
 const LOJAS = CONFIG.LOJAS.map((l) => ({
+  chave: l.chave,
   nome: l.nome,
   endereco: l.caixa + String.fromCharCode(64) + l.dominio,
 }));
@@ -3023,8 +3130,8 @@ function actualizarAssunto() {
   const caixa = $("assunto-linha");
   const assunto = assuntoDoRegisto();
   caixa.textContent = "";
-  caixa.hidden = !assunto;
-  if (!assunto) return;
+  caixa.hidden = !assunto || envioDireto();
+  if (caixa.hidden) return;
   caixa.appendChild(linhaCopiavel("Assunto", assunto,
     "Cola-o no assunto do email, se vier vazio."));
 }
@@ -3040,6 +3147,34 @@ function desenharLojas() {
   $("destino-unico").hidden = temLojas;
   $("destino-lojas").hidden = !temLojas;
   if (!temLojas) return;
+
+  const direto = envioDireto();
+  $("envio-direto").hidden = !direto;
+  $("lojas").hidden = direto;
+  $("send-txt").textContent = direto ? "Enviar registo" : "Partilhar registo";
+  $("ir-lojas").textContent = direto ? "Loja ↓" : "Enviar para ↓";
+  if (direto) {
+    $("card-lojas").querySelector(".card-hint").textContent =
+      "O registo segue sozinho para a caixa da tua loja. A loja e o código ficam guardados neste telemóvel.";
+    const escolha = $("lojas-escolha");
+    escolha.textContent = "";
+    LOJAS.forEach((l) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "seg";
+      b.innerHTML = '<span class="seg-t"></span>';
+      b.querySelector(".seg-t").textContent = l.nome;
+      b.setAttribute("aria-pressed", String(lerGuardado("catefoto.loja") === l.chave));
+      b.addEventListener("click", () => {
+        gravarGuardado("catefoto.loja", l.chave);
+        marcar(null, "loja-err", false);
+        desenharLojas();
+      });
+      escolha.appendChild(b);
+    });
+    $("codigo-envio").value = lerGuardado("catefoto.codigo");
+    return;
+  }
 
   LOJAS.forEach((l) => {
     const linha = document.createElement("div");
@@ -3063,6 +3198,10 @@ function desenharLojas() {
 }
 
 desenharLojas();
+$("codigo-envio").addEventListener("input", (e) => {
+  gravarGuardado("catefoto.codigo", e.target.value.trim());
+  if (e.target.value.trim()) marcar("codigo-envio", "codigo-err", false);
+});
 
 // A linha do rodapé leva ao cartão das lojas.
 $("ir-lojas").addEventListener("click", () => {
@@ -3246,12 +3385,13 @@ $("retry").addEventListener("click", () => {
   $("done").classList.remove("show");
   enviar();
 });
+$("partilhar-app").addEventListener("click", partilhar);
 
 // Evita perder fotografias por um toque acidental em "recarregar". Continua
 // activo depois de partilhar: enquanto não houver confirmação de envio, as
 // fotografias ainda podem fazer falta.
 window.addEventListener("beforeunload", (e) => {
-  if (prontas().length) {
+  if (prontas().length && !estado.enviado) {
     e.preventDefault();
     e.returnValue = "";
   }
