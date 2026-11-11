@@ -2887,7 +2887,9 @@ function assuntoDoRegisto() {
   const num = $("num").value.trim();
   const cliente = clientePedido() ? $("cliente").value.trim() : "";
   const quem = num || cliente;
-  return quem ? `${quem} · ${mom.marca} · ${srv.marca}` : "";
+  // Serviço por acabar (Parcial ou Não resolvido): vê-se logo na caixa de entrada.
+  const pendente = pedeMotivo() ? " · PENDENTE" : "";
+  return quem ? `${quem} · ${mom.marca} · ${srv.marca}${pendente}` : "";
 }
 
 // O envio direto está ligado quando há endereço do servidor e lojas.

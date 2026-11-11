@@ -347,6 +347,7 @@ async function correr() {
   ok("«Outro» pede o detalhe", !p && el("detalhe-err").classList.contains("show"));
   escrever("motivo-detalhe", "cliente quer pensar");
   p = await partilhar();
+  ok("Assunto leva PENDENTE", p && p.title === "26000150 · REPARACAO LOCAL · DOMESTICO · PENDENTE", p && p.title);
   ok("Corpo: estado, motivo e detalhe", p && p.text.includes('Estado: Não resolvido — Outro ("cliente quer pensar")'), p && p.text.slice(0, 300));
   await novo();
   classificar("Doméstico", "Montagem", "Fora de Garantia");
@@ -355,6 +356,7 @@ async function correr() {
   botao("estados", "Resolvido").click();
   ok("Resolvido não pede motivo", el("campo-motivo").hidden);
   p = await partilhar();
+  ok("Resolvido: assunto sem PENDENTE", p && p.title === "26000151 · MONTAGEM · DOMESTICO", p && p.title);
   ok("Corpo: «Estado: Resolvido»", p && p.text.includes("Estado: Resolvido\n"));
   await novo();
   ok("Novo registo limpa o estado", E("estado.estadoServico === null") && el("motivo").value === "");
