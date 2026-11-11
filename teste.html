@@ -353,7 +353,11 @@ async function correr() {
   classificar("Doméstico", "Montagem", "Fora de Garantia");
   escrever("num", "26000151"); escrever("tec", "Teste");
   await juntar("Etiquetas"); await juntar("Fotografias");
+  E("actualizarBotaoEnviar()");
+  ok("Botão sem cor enquanto falta o estado", el("send").classList.contains("incompleto"));
   botao("estados", "Resolvido").click();
+  E("actualizarBotaoEnviar()");
+  ok("Botão com cor quando está completo", !el("send").classList.contains("incompleto"));
   ok("Resolvido não pede motivo", el("campo-motivo").hidden);
   p = await partilhar();
   ok("Resolvido: assunto sem PENDENTE", p && p.title === "26000151 · MONTAGEM · DOMESTICO", p && p.title);

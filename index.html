@@ -444,6 +444,8 @@
   .corte-sim { background: var(--red); color: #fff; }
   .corte-sim:active { background: var(--red-dark); }
 
+  /* Incompleto: cinzento mas tocável, para mostrar o que falta. */
+  .send.incompleto { background: var(--muted); }
   .send:disabled { background: var(--muted); opacity: .5; cursor: not-allowed; }
   .dest {
     margin: 10px 0 0; text-align: center;
@@ -2403,7 +2405,16 @@ function redesenhar() {
   $("tot-count").textContent = partes.length ? partes.join(" + ") : "Sem fotografias";
 
   $("send").disabled = todas.length === 0;
+  actualizarBotaoEnviar();
 }
+
+// O botão só ganha cor quando o registo está completo.
+function actualizarBotaoEnviar() {
+  $("send").classList.toggle("incompleto", !validar(false));
+}
+// Qualquer toque ou escrita pode completar o registo; depois dos outros handlers.
+["input", "change", "click"].forEach((ev) =>
+  document.addEventListener(ev, () => setTimeout(actualizarBotaoEnviar, 0)));
 
 // Constrói os botões de uma das listas. `campo` é a propriedade do estado que
 // a escolha preenche ("momento", "servico" ou "garantia").
@@ -2595,7 +2606,8 @@ function marcar(campoId, erroId, mal) {
   $(erroId).classList.toggle("show", mal);
 }
 
-function validar() {
+// `mostrar` falso: só diz se está completo, sem marcar erros nem mexer no ecrã.
+function validar(mostrar = true) {
   const num = $("num").value.trim();
   const tec = $("tec").value.trim();
 
@@ -2635,6 +2647,9 @@ function validar() {
                && !e.dispensaEtiqueta.marcada)
     : -1;
   const faltaEtq = !fotMal && !faltaEq && semEtq >= 0;
+
+  if (!mostrar) return !(numMal || cliMal || morMal || preMal || tecMal || momMal || srvMal || garMal
+           || fotMal || faltaEq || faltaEtq || fatMal || estMal || motMal || detMal || empMal);
 
   $("num-err").textContent = marcaMomento("numeroDispensavel")
     ? "Indica o número do serviço, ou marca que não o tens."
