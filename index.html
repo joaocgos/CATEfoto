@@ -2663,8 +2663,11 @@ function validar(mostrar = true) {
       [tecMal, "registado por"], [estMal, "estado do serviço"], [motMal, "motivo"],
       [detMal, "detalhe do motivo"], [preMal, "o que o cliente pretende"],
       [fatMal, "fatura"], [empMal, "fotografias do emprestado"],
-      [fotMal, "fotografias"], [faltaEq, `fotografias do equipamento ${vazio + 1}`],
-      [faltaEtq, estado.equipamentos.length > 1 ? `etiqueta do equipamento ${etq}` : "etiqueta"],
+      // Diz que fotografias faltam, não só «fotografias».
+      [semEtq >= 0, estado.equipamentos.length > 1 ? `etiqueta do equipamento ${etq}` : "etiqueta"],
+      [fotMal && semEq, "fotografias do local"],
+      [fotMal && !semEq && semEtq < 0, "fotografias do equipamento"],
+      [faltaEq, `fotografias do equipamento ${vazio + 1}`],
     ].filter(([mal]) => mal).map(([, nome]) => nome);
   }
   $("num-err").textContent = marcaMomento("numeroDispensavel")

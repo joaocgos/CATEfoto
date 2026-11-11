@@ -156,7 +156,7 @@ async function correr() {
   ok("Não passa de 6 algarismos", el("num").value === "123456", el("num").value);
   escrever("num", "000123");
   ok("Os zeros do início ficam no assunto", E("assuntoDoRegisto()") === "000123 · RECOLHA · DOMESTICO", E("assuntoDoRegisto()"));
-  ok("A lista diz o que falta", el("em-falta").textContent.includes("fotografias"), el("em-falta").textContent);
+  ok("A lista diz o que falta", el("em-falta").textContent.includes("fotografias do equipamento"), el("em-falta").textContent);
   ok("Sem fotografia não se pode partilhar", el("send").disabled);
   await juntar("Fotografias");
   let p = await partilhar();
