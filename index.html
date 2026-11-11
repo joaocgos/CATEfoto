@@ -167,7 +167,7 @@
     display: block; font-size: 13px; font-weight: 600;
     color: var(--ink-2); margin-bottom: 7px;
   }
-  input[type="text"], textarea {
+  input[type="text"], textarea, select {
     width: 100%;
     background: var(--bg);
     border: 1.5px solid var(--line);
@@ -177,16 +177,16 @@
     padding: 14px 15px;
     transition: border-color .15s, background .15s;
   }
-  input[type="text"] { height: 54px; }
+  input[type="text"], select { height: 54px; }
   textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
   input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
-  input:focus, textarea:focus {
+  input:focus, textarea:focus, select:focus {
     border-color: var(--red);
     background: var(--card);
   }
   /* O contorno do teclado não se retira: a borda vermelha de 1,5 px sozinha é
      um indicador de foco fraco. */
-  input:focus-visible, textarea:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   #num {
     font-size: 22px; font-weight: 700;
     letter-spacing: .16em; font-variant-numeric: tabular-nums;
@@ -346,6 +346,13 @@
   .thumb .del::after { content: ""; position: absolute; inset: -4px; }
 
   .notas-fotos-pergunta { margin: 0; }
+  /* Estado do serviço: três botões numa linha, mais baixos que os dos passos. */
+  .segmented.estados { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .segmented.estados .seg:last-child { grid-column: auto; }
+  .segmented.estados .seg { min-height: 64px; padding: 12px 10px; justify-content: center; }
+  .segmented.estados .seg-t { font-size: 14px; }
+  .segmented.estados .seg[aria-pressed="true"]::after { top: 6px; right: 8px; font-size: 13px; }
+  #campo-motivo { margin-top: 14px; }
   input.nota-campo { height: 44px; font-size: 14px; }
 
   .thumb.loading { display: flex; align-items: center; justify-content: center; }
@@ -718,6 +725,29 @@
       </div>
     </section>
 
+    <!-- Estado do serviço: só nos momentos com estadoServico ---------------->
+    <section class="card" id="card-estado" hidden>
+      <div class="card-head"><h2>Estado do serviço</h2></div>
+      <p class="card-hint">Como ficou o serviço no fim desta visita.</p>
+      <div class="segmented estados" id="estados" role="group" aria-label="Estado do serviço"></div>
+      <p class="err" role="alert" id="est-err">Indica como ficou o serviço.</p>
+      <div id="campo-motivo" hidden>
+        <div class="field">
+          <label class="lbl" for="motivo">Motivo</label>
+          <select id="motivo" aria-describedby="motivo-err">
+            <option value="">Escolhe o motivo</option>
+          </select>
+          <p class="err" role="alert" id="motivo-err">Escolhe o motivo.</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="motivo-detalhe" id="detalhe-lbl">Detalhe (opcional)</label>
+          <input id="motivo-detalhe" type="text" autocomplete="off" maxlength="140"
+                 placeholder="Ex.: falta a placa eletrónica" aria-describedby="detalhe-err">
+          <p class="err" role="alert" id="detalhe-err">Explica o motivo.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- O que o cliente pretende: só nos momentos que o pedem --------------->
     <section class="card" id="card-pretendido" hidden>
       <div class="card-head"><h2>O que o cliente pretende</h2></div>
@@ -765,6 +795,10 @@
     <!-- Um bloco por equipamento, gerado no script ---------------------------->
     <div id="equipamentos"></div>
     <p class="err" role="alert" id="fot-err">Junta pelo menos uma fotografia.</p>
+
+    <!-- Equipamento emprestado: Recolha e Entrega (marca emprestimo) --------->
+    <div id="emprestado"></div>
+    <p class="err" role="alert" id="emp-err">Junta a etiqueta ou fotografias do emprestado, ou desmarca a pergunta.</p>
 
     <!-- Observações --------------------------------------------------------->
     <section class="card">
@@ -955,6 +989,8 @@ const MOMENTOS = [
     numeroDispensavel: true,
     // É no primeiro contacto que a fatura aparece: em garantia, pede-se aqui.
     faturaObrigatoria: true,
+    // Quando se leva o equipamento, pode ficar outro emprestado no lugar dele.
+    emprestimo: "Ficou algum equipamento emprestado?",
     icone: '<path d="M2.5 6.5h11v10h-11z"/><path d="M13.5 9.5h4l3.5 3.5v3.5h-7.5"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>' },
 
   { chave: "reparacao_local", nome: "Reparação", detalhe: "resolvida no local",
@@ -963,6 +999,8 @@ const MOMENTOS = [
     // depois. O número é pedido, mas pode ser dispensado.
     numeroDispensavel: true,
     faturaObrigatoria: true,
+    // Na reparação no local é que se sabe se o problema ficou resolvido.
+    estadoServico: true,
     icone: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>' },
 
   // Cobre as duas formas de o equipamento dar entrada: trazido pelo técnico
@@ -982,6 +1020,8 @@ const MOMENTOS = [
     // Numa entrega, quem recebeu é parte da prova. Opcional: não trava a
     // partilha quando não se soube ou não se quis registar.
     campoRecebidoPor: true,
+    // Fecha o ciclo da recolha: o emprestado volta, e regista-se como voltou.
+    emprestimo: "Foi devolvido algum equipamento emprestado?",
     icone: '<path d="M21 8v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><rect x="2.5" y="3.5" width="19" height="4.5" rx="1"/><path d="M10 12.5h4"/>' },
 
   { chave: "montagem", nome: "Montagem", detalhe: "instalação de equipamento novo",
@@ -995,6 +1035,7 @@ const MOMENTOS = [
     // Num equipamento acabado de instalar não há danos anteriores a documentar.
     ajudaFotos: "O equipamento instalado e as ligações feitas.",
     campoRecebidoPor: true,
+    estadoServico: true,
     icone: '<path d="M12 2.5 4 7v10l8 4.5 8-4.5V7z"/><path d="m4 7 8 4.5L20 7"/><path d="M12 11.5v10"/>' },
 
   // O Orçamento é o único momento que não é sobre um equipamento: é um
@@ -1053,10 +1094,30 @@ const GARANTIAS = [
     icone: '<path d="M12 2.5 4.5 5.5v6c0 4.4 3.2 8.4 7.5 9.9 4.3-1.5 7.5-5.5 7.5-9.9v-6z"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2v.5"/><path d="M12 15.5h.01"/>' },
 ];
 
+// Como ficou o serviço, nos momentos com `estadoServico`. Fora do «Resolvido»
+// o motivo é obrigatório.
+const ESTADOS_SERVICO = [
+  { chave: "resolvido", nome: "Resolvido", texto: "Resolvido",
+    icone: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>' },
+  { chave: "parcial", nome: "Parcial", texto: "Parcialmente resolvido",
+    icone: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>' },
+  { chave: "nao_resolvido", nome: "Não resolvido", texto: "Não resolvido",
+    icone: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>' },
+];
+const MOTIVOS_PENDENTE = [
+  "Falta de peça",
+  "Precisa de ir para a oficina",
+  "Cliente ausente",
+  "Aguarda orçamento",
+  "Aguarda autorização da marca",
+  "Outro",
+];
+
 const POR_CHAVE = (lista) => Object.fromEntries(lista.map((t) => [t.chave, t]));
 const MOMENTO_POR_CHAVE = POR_CHAVE(MOMENTOS);
 const SERVICO_POR_CHAVE = POR_CHAVE(SERVICOS);
 const GARANTIA_POR_CHAVE = POR_CHAVE(GARANTIAS);
+const ESTADO_POR_CHAVE = POR_CHAVE(ESTADOS_SERVICO);
 
 // Os três seletores, pela ordem em que se escolhem. O tipo é a escolha mais
 // larga; a garantia vem depois do momento porque depende dele — no Orçamento
@@ -1084,6 +1145,8 @@ const novoEquipamento = () => ({
   dispensaEtiqueta: { marcada: false, motivo: "" },
 });
 
+const novoEmprestado = () => ({ ativo: false, etiquetas: [], fotos: [] });
+
 const estado = {
   momento: null,
   servico: null,
@@ -1102,6 +1165,10 @@ const estado = {
   fatura: [],
   // Omissões assumidas por quem regista (ver caixaDispensa).
   dispensas: novasDispensas(),
+  // Equipamento emprestado ao cliente (Recolha) ou devolvido (Entrega).
+  emprestado: novoEmprestado(),
+  // Como ficou o serviço (Reparação, Montagem).
+  estadoServico: null,
 };
 
 // Qual o bloco e a secção que pediram o seletor de ficheiros. Há só quatro
@@ -1521,13 +1588,14 @@ function colecao(eq, alvo) {
   if (alvo === "fatura") {
     return { itens: estado.fatura, max: CONFIG.MAX_FATURA, nome: "fotografias da fatura" };
   }
-  const equipamento = estado.equipamentos[eq];
+  const emp = eq === "emp";
+  const equipamento = emp ? estado.emprestado : estado.equipamentos[eq];
   if (alvo === "etiquetas") {
     return { itens: equipamento.etiquetas, max: CONFIG.MAX_ETIQUETAS, nome: "etiquetas" };
   }
   // Ar Condicionado em garantia pode levar várias situações no mesmo
   // equipamento a documentar (fugas, componentes, instalação): o limite sobe.
-  const maxFotos = estado.servico === "ar_condicionado" && emGarantia()
+  const maxFotos = !emp && estado.servico === "ar_condicionado" && emGarantia()
     ? CONFIG.MAX_FOTOS_AC_GARANTIA : CONFIG.MAX_FOTOS;
   return { itens: equipamento.fotos, max: maxFotos, nome: "fotografias" };
 }
@@ -1540,7 +1608,8 @@ function fotosVisiveisPorParte() {
   if (haServico()) p.folha = conta(estado.folha);
   if (mostraFatura()) p.fatura = conta(estado.fatura);
   if (semEquipamentos()) p.local = conta(estado.local);
-  else p.equipamentos = estado.equipamentos
+  if (emprestimoAtivo()) p.emprestado = conta(estado.emprestado.etiquetas) + conta(estado.emprestado.fotos);
+  if (!semEquipamentos()) p.equipamentos = estado.equipamentos
     .reduce((t, e) => t + conta(e.etiquetas) + conta(e.fotos), 0);
   return p;
 }
@@ -1549,6 +1618,7 @@ const nomeParte = (k) => ({
   folha: "da folha de serviço",
   fatura: "da fatura",
   local: "do local",
+  emprestado: "do equipamento emprestado",
   equipamentos: estado.equipamentos.length > 1 ? "dos equipamentos" : "do equipamento",
 })[k];
 
@@ -1577,7 +1647,11 @@ function partesDoRegisto() {
   if (haServico()) p.push({ itens: estado.folha, rotulo: "folha_", eq: null });
   if (mostraFatura()) p.push({ itens: estado.fatura, rotulo: "fatura_", eq: null });
   if (semEquipamentos()) p.push({ itens: estado.local, rotulo: "", eq: null });
-  else estado.equipamentos.forEach((e, eq) => {
+  if (emprestimoAtivo()) {
+    p.push({ itens: estado.emprestado.etiquetas, rotulo: "emprestado_etiqueta_", eq: null });
+    p.push({ itens: estado.emprestado.fotos, rotulo: "emprestado_", eq: null });
+  }
+  if (!semEquipamentos()) estado.equipamentos.forEach((e, eq) => {
     p.push({ itens: e.etiquetas, rotulo: "etiqueta_", eq });
     p.push({ itens: e.fotos, rotulo: "", eq });
   });
@@ -1593,7 +1667,8 @@ function prontas() {
 
 // Todas as fotografias de todos os equipamentos, por ordem.
 function todosItens() {
-  const fora = [...estado.folha, ...estado.fatura, ...estado.local];
+  const fora = [...estado.folha, ...estado.fatura, ...estado.local,
+                ...estado.emprestado.etiquetas, ...estado.emprestado.fotos];
   estado.equipamentos.forEach((e) => fora.push(...e.etiquetas, ...e.fotos));
   return fora;
 }
@@ -2031,6 +2106,101 @@ function desenharLocal() {
   caixa.appendChild(cartao);
 }
 
+// O emprestado só conta com a pergunta marcada, e só nos momentos que a fazem.
+const emprestimoAtivo = () => !!marcaMomento("emprestimo") && estado.emprestado.ativo;
+
+// Pergunta e, com «sim», as etiquetas e as fotografias do equipamento emprestado.
+function desenharEmprestado() {
+  const caixa = $("emprestado");
+  caixa.textContent = "";
+  const pergunta = (MOMENTO_POR_CHAVE[estado.momento] || {}).emprestimo;
+  if (!pergunta) return;
+
+  const cartao = document.createElement("section");
+  cartao.className = "card";
+  const rotulo = document.createElement("label");
+  rotulo.className = "dispensa-marca notas-fotos-pergunta";
+  const marca = document.createElement("input");
+  marca.type = "checkbox";
+  marca.id = "emp-marca";
+  marca.checked = estado.emprestado.ativo;
+  const txt = document.createElement("span");
+  txt.textContent = pergunta;
+  rotulo.append(marca, txt);
+  marca.addEventListener("change", () => {
+    const antes = fotosVisiveisPorParte();
+    estado.emprestado.ativo = marca.checked;
+    marcar(null, "emp-err", false);
+    desenhar();
+    $("emp-marca").focus({ preventScroll: true });
+    avisarEscondidas(antes);
+  });
+  cartao.appendChild(rotulo);
+
+  if (estado.emprestado.ativo) {
+    cartao.appendChild(construirSubseccao("emp", "etiquetas", "Etiqueta do emprestado",
+      "A etiqueta com a marca, o modelo e o número de série. Não é obrigatória, mas " +
+      "é por ela que se sabe que equipamento é.", "in-etq-cam", "in-etq-gal"));
+    cartao.appendChild(construirSubseccao("emp", "fotos", "Fotografias do emprestado",
+      "O estado em que o equipamento emprestado fica. Riscos e amolgadelas de perto.",
+      "in-fot-cam", "in-fot-gal"));
+  }
+  caixa.appendChild(cartao);
+}
+
+// Os botões do estado do serviço e a lista de motivos (fixos; desenhados uma vez).
+function prepararEstadoServico() {
+  const caixa = $("estados");
+  ESTADOS_SERVICO.forEach((t) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "seg";
+    b.dataset.chave = t.chave;
+    b.setAttribute("aria-pressed", "false");
+    // t.icone vem das constantes acima.
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + t.icone + "</svg>" +
+      '<span class="seg-t"></span>';
+    b.querySelector(".seg-t").textContent = t.nome;
+    b.addEventListener("click", () => {
+      estado.estadoServico = t.chave;
+      marcar(null, "est-err", false);
+      actualizarEstadoServico();
+    });
+    caixa.appendChild(b);
+  });
+  const sel = $("motivo");
+  MOTIVOS_PENDENTE.forEach((m) => {
+    const o = document.createElement("option");
+    o.value = o.textContent = m;
+    sel.appendChild(o);
+  });
+  sel.addEventListener("change", () => {
+    marcar("motivo", "motivo-err", false);
+    actualizarEstadoServico();
+  });
+  $("motivo-detalhe").addEventListener("input", (e) => {
+    if (e.target.value.trim().length >= 3) marcar("motivo-detalhe", "detalhe-err", false);
+  });
+}
+
+const pedeEstado = () => !!marcaMomento("estadoServico");
+const pedeMotivo = () => pedeEstado() && !!estado.estadoServico && estado.estadoServico !== "resolvido";
+const pedeDetalhe = () => pedeMotivo() && $("motivo").value === "Outro";
+
+function actualizarEstadoServico() {
+  $("card-estado").hidden = !pedeEstado();
+  $("estados").querySelectorAll(".seg").forEach((b) => {
+    b.setAttribute("aria-pressed", String(b.dataset.chave === estado.estadoServico));
+  });
+  $("campo-motivo").hidden = !pedeMotivo();
+  $("detalhe-lbl").textContent = pedeDetalhe() ? "Detalhe" : "Detalhe (opcional)";
+  if (!pedeMotivo()) {
+    marcar("motivo", "motivo-err", false);
+    marcar("motivo-detalhe", "detalhe-err", false);
+  }
+}
+
 // Um cartão por equipamento, com as suas etiquetas e as suas fotografias.
 function desenharEquipamentos() {
   const caixa = $("equipamentos");
@@ -2138,6 +2308,7 @@ function redesenhar() {
   // continuavam desenhados por baixo de um cartão escondido.
   if (semEquipamentos()) $("equipamentos").textContent = "";
   else desenharEquipamentos();
+  desenharEmprestado();
   actualizarCartaoEtiqueta();
 
   const n = estado.equipamentos.length;
@@ -2166,12 +2337,15 @@ function redesenhar() {
   const nFol = haServico() ? soProntas(estado.folha) : 0;
   const nFat = mostraFatura() ? soProntas(estado.fatura) : 0;
   const nLoc = semEq ? soProntas(estado.local) : 0;
+  const nEmp = emprestimoAtivo()
+    ? soProntas(estado.emprestado.etiquetas) + soProntas(estado.emprestado.fotos) : 0;
   const partes = [];
   if (nLoc) partes.push(nLoc + (nLoc === 1 ? " foto do local" : " fotos do local"));
   if (nEtq) partes.push(nEtq + (nEtq === 1 ? " etiqueta" : " etiquetas"));
   if (nFot) partes.push(nFot + (nFot === 1 ? " foto" : " fotos"));
   if (nFol) partes.push(nFol + (nFol === 1 ? " folha" : " folhas"));
   if (nFat) partes.push(nFat + (nFat === 1 ? " fatura" : " faturas"));
+  if (nEmp) partes.push(nEmp + " do emprestado");
   $("tot-count").textContent = partes.length ? partes.join(" + ") : "Sem fotografias";
 
   $("send").disabled = todas.length === 0;
@@ -2267,6 +2441,8 @@ function actualizarCampoNumero() {
   $("campo-contacto").hidden = !marcaMomento("camposContacto");
   $("card-pretendido").hidden = !marcaMomento("campoPretendido");
   $("card-equipamentos").hidden = semEquipamentos();
+  actualizarEstadoServico();
+  if (!marcaMomento("emprestimo")) marcar(null, "emp-err", false);
 
   $("campo-cliente").hidden = !clientePedido();
   if ($("campo-cliente").hidden) {
@@ -2383,6 +2559,12 @@ function validar() {
   const srvMal = !estado.servico;
   const garMal = precisaGarantia() && !estado.garantia;
   const fotMal = prontas().length === 0;
+  const estMal = pedeEstado() && !estado.estadoServico;
+  const motMal = pedeMotivo() && !$("motivo").value;
+  const detMal = pedeDetalhe() && $("motivo-detalhe").value.trim().length < 3;
+  // Marcar que ficou um emprestado e não juntar nada é quase sempre esquecimento.
+  const empMal = emprestimoAtivo() && ![...estado.emprestado.etiquetas, ...estado.emprestado.fotos]
+    .some((f) => f.estado === "pronta");
 
   // Com vários equipamentos declarados, um bloco vazio é quase sempre um
   // esquecimento — vale a pena dizer qual, em vez de deixar passar.
@@ -2412,6 +2594,10 @@ function validar() {
   marcar(null, "mom-err", momMal);
   marcar(null, "srv-err", srvMal);
   marcar(null, "gar-err", garMal);
+  marcar(null, "est-err", estMal);
+  marcar("motivo", "motivo-err", motMal);
+  marcar("motivo-detalhe", "detalhe-err", detMal);
+  marcar(null, "emp-err", empMal);
   const erroFotos = $("fot-err");
   const varios = estado.equipamentos.length > 1;
   if (fotMal) {
@@ -2427,10 +2613,12 @@ function validar() {
 
   const primeiro = srvMal ? "servicos" : momMal ? "momentos" : garMal ? "garantias"
                  : numMal ? "num" : cliMal ? "cliente" : morMal ? "morada"
-                 : tecMal ? "tec" : preMal ? "pretendido" : fatMal ? "fatura" : null;
+                 : tecMal ? "tec" : estMal ? "card-estado" : motMal ? "motivo"
+                 : detMal ? "motivo-detalhe" : preMal ? "pretendido" : fatMal ? "fatura"
+                 : empMal ? "emprestado" : null;
   if (primeiro) {
     levarA($(primeiro), "center");
-    if (["num", "cliente", "morada", "tec", "pretendido"].includes(primeiro)) {
+    if (["num", "cliente", "morada", "tec", "pretendido", "motivo", "motivo-detalhe"].includes(primeiro)) {
       $(primeiro).focus({ preventScroll: true });
     }
   }
@@ -2439,7 +2627,7 @@ function validar() {
     levarA($("equipamentos").children[culpado], "center");
   }
   return !(numMal || cliMal || morMal || preMal || tecMal || momMal || srvMal || garMal
-           || fotMal || faltaEq || faltaEtq || fatMal);
+           || fotMal || faltaEq || faltaEtq || fatMal || estMal || motMal || detMal || empMal);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2482,6 +2670,28 @@ function construirFicheiros(num, momento, servico, garantia = null) {
   return ficheiros;
 }
 
+// «Estado: Não resolvido — Falta de peça ("detalhe")».
+function linhaEstado() {
+  let l = `Estado: ${ESTADO_POR_CHAVE[estado.estadoServico].texto}`;
+  if (pedeMotivo()) {
+    l += ` — ${$("motivo").value}`;
+    const d = $("motivo-detalhe").value.trim();
+    if (d) l += ` ("${d}")`;
+  }
+  return l;
+}
+
+// «Equipamento emprestado: 1 etiqueta, 3 fotografias».
+function linhaEmprestado(mom) {
+  const n = (arr) => arr.filter((f) => f.estado === "pronta").length;
+  const e = n(estado.emprestado.etiquetas), f = n(estado.emprestado.fotos);
+  const partes = [];
+  if (e) partes.push(e + (e === 1 ? " etiqueta" : " etiquetas"));
+  if (f) partes.push(f + (f === 1 ? " fotografia" : " fotografias"));
+  const rotulo = mom.chave === "entrega" ? "Equipamento emprestado devolvido" : "Equipamento emprestado";
+  return `${rotulo}: ${partes.join(", ")}`;
+}
+
 // " — <texto>" atrás da hora da fotografia, só quando há descrição escrita.
 const notaDe = (f) => (f.nota ? ` — "${f.nota}"` : "");
 
@@ -2517,6 +2727,8 @@ function construirCorpo(num, momento, servico, garantia = null) {
     ...(numExterno ? [`Serviço externo: ${numExterno}`] : []),
     // A garantia logo a seguir aos números: é a primeira coisa que se pergunta.
     ...(garantia ? [`Garantia: ${GARANTIA_POR_CHAVE[garantia].texto}`] : []),
+    // Como ficou o serviço, logo à vista: é o que decide se há nova visita.
+    ...(pedeEstado() && estado.estadoServico ? [linhaEstado()] : []),
     ...(cliente ? [`Cliente: ${cliente}`] : []),
     ...(morada ? [`Morada / local: ${morada}`] : []),
     ...(mostrarContacto && $("contacto").value.trim()
@@ -2531,6 +2743,7 @@ function construirCorpo(num, momento, servico, garantia = null) {
                   (nFolha === 1 ? "fotografia" : "fotografias")] : []),
     ...(nFatura ? [`Fatura: ${nFatura} ` +
                    (nFatura === 1 ? "fotografia" : "fotografias")] : []),
+    ...(emprestimoAtivo() ? [linhaEmprestado(mom)] : []),
     `Fotografias: ${todas.length} (${kb(bytes)})`,
   ];
 
@@ -2582,7 +2795,7 @@ function construirCorpo(num, momento, servico, garantia = null) {
     itens.filter((f) => f.estado === "pronta").forEach((f, i) => {
       if (!f.capturada) return;
       const l = porGrupo.get(eq) || [];
-      l.push(`  · ${rotulo.replace("_", " ")}${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
+      l.push(`  · ${rotulo.replace(/_/g, " ")}${doisDig(i + 1)} — ${dataHora(f.capturada)}${notaDe(f)}`);
       porGrupo.set(eq, l);
     });
   });
@@ -2719,6 +2932,10 @@ function recomeçar() {
   estado.local = [];
   // Cada registo decide as suas omissões.
   estado.dispensas = novasDispensas();
+  estado.emprestado = novoEmprestado();
+  estado.estadoServico = null;
+  $("motivo").value = "";
+  $("motivo-detalhe").value = "";
   estado.notasFotos = false;
   $("notas-fotos").checked = false;
   $("ajuda").open = false;
@@ -2730,9 +2947,10 @@ function recomeçar() {
   $("cliente").value = "";
   $("recebido").value = "";
   ["num-err", "cliente-err", "morada-err", "pretendido-err", "tec-err",
-   "mom-err", "srv-err", "gar-err", "fot-err", "fat-err"].forEach((id) => marcar(null, id, false));
+   "mom-err", "srv-err", "gar-err", "fot-err", "fat-err", "est-err", "motivo-err",
+   "detalhe-err", "emp-err"].forEach((id) => marcar(null, id, false));
   // Nenhum campo fica vermelho de um registo para o seguinte.
-  ["num", "cliente", "morada", "tec", "pretendido"]
+  ["num", "cliente", "morada", "tec", "pretendido", "motivo", "motivo-detalhe"]
     .forEach((id) => $(id).classList.remove("invalid"));
   // Um registo novo é classificado do zero. Herdar o tipo, o momento e a
   // garantia do anterior passava despercebido, e um registo podia ir parar ao
@@ -2972,6 +3190,7 @@ $("tec").addEventListener("input", (e) => {
 desenharSeletor("momentos", MOMENTOS, "momento", "mom-err");
 desenharSeletor("servicos", SERVICOS, "servico", "srv-err");
 desenharSeletor("garantias", GARANTIAS, "garantia", "gar-err");
+prepararEstadoServico();
 
 // Tocar na linha de um passo já escolhido volta a abri-lo.
 PASSOS.forEach((p) => {

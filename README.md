@@ -255,6 +255,23 @@ omissão deliberada de um esquecimento. A linha nunca diz que as etiquetas «já
 foram enviadas» noutro registo: a app só sabe que foram *partilhadas*, não que o
 email saiu.
 
+### Equipamento emprestado
+
+Na **Recolha** a app pergunta «Ficou algum equipamento emprestado?» e na
+**Entrega** «Foi devolvido algum equipamento emprestado?» (marca `emprestimo`
+em `MOMENTOS`). Com «sim» aparece um cartão com etiqueta (opcional) e
+fotografias do emprestado; marcado e vazio, não parte. Os ficheiros levam
+`emprestado_etiqueta_NN` e `emprestado_NN`, e o corpo uma linha
+«Equipamento emprestado: …».
+
+### Estado do serviço
+
+Na **Reparação** e na **Montagem** (marca `estadoServico`): Resolvido,
+Parcial ou Não resolvido, obrigatório. Fora do «Resolvido» pede um motivo da
+lista `MOTIVOS_PENDENTE` (obrigatório) e um detalhe, obrigatório só com
+«Outro». No corpo: `Estado: Não resolvido — Falta de peça ("…")`, logo a
+seguir à garantia. Não entra no assunto.
+
 ### Corte automático
 
 Depois de uma fotografia de **etiqueta, folha de serviço ou fatura** (o perfil

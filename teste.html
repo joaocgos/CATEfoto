@@ -301,6 +301,61 @@ async function correr() {
   ok("Desligar a pergunta apaga as descrições", E("estado.equipamentos[0].fotos.every((f) => !f.nota)"));
   await novo();
 
+  titulo("Equipamento emprestado");
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  escrever("num", "26000140"); escrever("tec", "Teste");
+  ok("A Recolha pergunta pelo emprestado", !!el("emp-marca") && !el("emp-marca").checked);
+  await juntar("Fotografias");
+  el("emp-marca").click();
+  await esperar(100);
+  ok("Com «sim» aparecem a etiqueta e as fotografias", !!bloco("Etiqueta do emprestado") && !!bloco("Fotografias do emprestado"));
+  p = await partilhar();
+  ok("Marcado e vazio, não parte", !p && el("emp-err").classList.contains("show"));
+  await juntar("Etiqueta do emprestado");
+  await juntar("Fotografias do emprestado", 2);
+  p = await partilhar();
+  ok("Parte com o emprestado", !!p);
+  ok("Ficheiros do emprestado à parte", p && nomes(p).includes("26000140_recolha_dom_fg_emprestado_etiqueta_01.jpg")
+     && nomes(p).includes("26000140_recolha_dom_fg_emprestado_02.jpg"), nomes(p));
+  ok("Corpo: linha do emprestado", p && p.text.includes("Equipamento emprestado: 1 etiqueta, 2 fotografias"));
+  await novo();
+  ok("Novo registo desliga o emprestado", E("estado.emprestado.ativo === false && estado.emprestado.fotos.length === 0"));
+  classificar("Doméstico", "Entrega", "Fora de Garantia");
+  ok("A Entrega pergunta pela devolução", !!el("emp-marca") && el("emprestado").textContent.includes("devolvido"));
+  classificar("Doméstico", "Entrada Oficina", "Fora de Garantia");
+  ok("A Entrada Oficina não pergunta", !el("emp-marca"));
+  await novo();
+
+  titulo("Estado do serviço");
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  ok("A Recolha não pede estado", el("card-estado").hidden);
+  botao("momentos", "Reparação").click();
+  escrever("num", "26000150"); escrever("tec", "Teste");
+  ok("A Reparação pede estado", !el("card-estado").hidden);
+  await juntar("Fotografias");
+  p = await partilhar();
+  ok("Sem estado, não parte", !p && el("est-err").classList.contains("show"));
+  botao("estados", "Não resolvido").click();
+  ok("Não resolvido mostra o motivo", !el("campo-motivo").hidden);
+  p = await partilhar();
+  ok("Sem motivo, não parte", !p && el("motivo-err").classList.contains("show"));
+  el("motivo").value = "Outro"; el("motivo").dispatchEvent(new w.Event("change"));
+  p = await partilhar();
+  ok("«Outro» pede o detalhe", !p && el("detalhe-err").classList.contains("show"));
+  escrever("motivo-detalhe", "cliente quer pensar");
+  p = await partilhar();
+  ok("Corpo: estado, motivo e detalhe", p && p.text.includes('Estado: Não resolvido — Outro ("cliente quer pensar")'), p && p.text.slice(0, 300));
+  await novo();
+  classificar("Doméstico", "Montagem", "Fora de Garantia");
+  escrever("num", "26000151"); escrever("tec", "Teste");
+  await juntar("Etiquetas"); await juntar("Fotografias");
+  botao("estados", "Resolvido").click();
+  ok("Resolvido não pede motivo", el("campo-motivo").hidden);
+  p = await partilhar();
+  ok("Corpo: «Estado: Resolvido»", p && p.text.includes("Estado: Resolvido\n"));
+  await novo();
+  ok("Novo registo limpa o estado", E("estado.estadoServico === null") && el("motivo").value === "");
+
   titulo("Hora da fotografia (EXIF)");
   const exif = Uint8Array.from([
     0xFF,0xD8, 0xFF,0xE1,0x00,0x48, 0x45,0x78,0x69,0x66,0x00,0x00,
