@@ -397,6 +397,9 @@ Quando não dá, marca-se a omissão e escolhe-se o motivo:
 - fotografias: Sem acesso ao equipamento, Cliente não autorizou, Equipamento não
   estava no local, Outro.
 
+O número omitido também leva motivo: Serviço ainda não aberto, Sem acesso ao
+sistema, Pedido direto do cliente, Outro.
+
 «Outro» obriga a escrever o detalhe. A omissão segue no email, em «Omitido por
 decisão de quem regista».
 

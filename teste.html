@@ -245,10 +245,13 @@ async function correr() {
   p = await partilhar();
   ok("Sem cliente nem morada não parte", !p);
   escrever("cliente", "Maria Teste"); escrever("morada", "Rua das Flores 12");
+  ok("Sem o motivo da omissão não parte", !(await partilhar()));
+  const selNum = el("dispensa-numero").querySelector("select");
+  selNum.value = "Serviço ainda não aberto"; selNum.dispatchEvent(new w.Event("change", { bubbles: true }));
   p = await partilhar();
-  ok("Com cliente e morada parte", !!p);
+  ok("Com cliente, morada e motivo parte", !!p);
   ok("Assunto pelo cliente", p && p.title === "Maria Teste · RECOLHA · DOMESTICO", p && p.title);
-  ok("Corpo lista a omissão", p && p.text.includes("Omitido por decisão de quem regista:") && p.text.includes("Número do serviço"));
+  ok("Corpo lista a omissão", p && p.text.includes("Omitido por decisão de quem regista:") && p.text.includes("Número do serviço — Serviço ainda não aberto"), p && p.text);
   await novo();
 
   titulo("Entrada Oficina (etiqueta obrigatória)");

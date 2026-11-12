@@ -709,6 +709,7 @@
                placeholder="Ex.: 000006" aria-describedby="num-err">
         <p class="err" role="alert" id="num-err">O número do serviço tem 6 algarismos (ex.: 123456 ou 000006).</p>
         <div id="dispensa-numero" hidden></div>
+        <p class="err" role="alert" id="num-om-err">Escolhe o motivo da omissão do número.</p>
       </div>
 
       <!-- O número do serviço noutra entidade (marca, seguradora, parceiro), com
@@ -1160,6 +1161,8 @@ const MOTIVOS_PENDENTE = [
 const MOTIVOS_OMITIR_ETIQUETA = ["Etiqueta ilegível", "Sem etiqueta", "Sem acesso à etiqueta", "Outro"];
 const MOTIVOS_OMITIR_FOTOS = ["Sem acesso ao equipamento", "Cliente não autorizou",
                               "Equipamento não estava no local", "Outro"];
+const MOTIVOS_OMITIR_NUMERO = ["Serviço ainda não aberto", "Sem acesso ao sistema",
+                               "Pedido direto do cliente", "Outro"];
 const novaOmissao = () => ({ marcada: false, motivo: "", detalhe: "" });
 const omissaoValida = (d) => d.marcada && !!d.motivo
   && (d.motivo !== "Outro" || d.detalhe.trim().length >= 3);
@@ -1191,7 +1194,7 @@ const PASSOS = [
 // Cada dispensa: se foi marcada e porquê. A do número guarda também o que
 // estava escrito, para o repor se a marca for tirada.
 const novasDispensas = () => ({
-  numero: { marcada: false, motivo: "", anterior: "" },
+  numero: { marcada: false, motivo: "", detalhe: "", anterior: "" },
   fatura: { marcada: false, motivo: "" },
 });
 
@@ -2062,6 +2065,7 @@ function caixaDispensa(dispensa, texto, aoMudar, motivos = null) {
     motivo.addEventListener("change", () => {
       dispensa.motivo = motivo.value;
       detalhe.hidden = motivo.value !== "Outro";
+      if (motivo.value) marcar(null, "num-om-err", false);
       if (motivo.value === "Outro") detalhe.focus();
     });
   } else {
@@ -2102,7 +2106,7 @@ function desenharDispensaNumero() {
   if (!aplica && d.marcada) {
     // Noutro momento esta dispensa não existe: desfaz-se, e o número volta.
     if (!$("num").value && d.anterior) $("num").value = d.anterior;
-    Object.assign(d, { marcada: false, motivo: "", anterior: "" });
+    Object.assign(d, { marcada: false, motivo: "", detalhe: "", anterior: "" });
   }
   caixa.hidden = !aplica;
   $("num").disabled = aplica && d.marcada;
@@ -2116,7 +2120,7 @@ function desenharDispensaNumero() {
     // Passa pelo tratamento normal do número: folha de serviço, aviso de fotos
     // escondidas, rótulos e o desenho desta própria caixa.
     num.dispatchEvent(new Event("input"));
-  }));
+  }, MOTIVOS_OMITIR_NUMERO));
 }
 
 function emGarantia() {
@@ -2707,6 +2711,8 @@ function validar(mostrar = true) {
   // O interno tem sempre 6 algarismos (zeros do início incluídos). Opcional
   // vazio passa; preenchido tem de estar certo, senão ia um número errado.
   const numMal = (numeroObrigatorio() || num !== "") && !/^\d{6}$/.test(num);
+  // Número omitido: só passa com o motivo (e o detalhe, em «Outro»).
+  const numOmMal = numeroDispensado() && !omissaoValida(estado.dispensas.numero);
   // A fatura, onde é obrigatória, só pode faltar com a dispensa marcada.
   const fatMal = faturaObrigatoria()
     && !estado.fatura.some((f) => f.estado === "pronta")
@@ -2740,7 +2746,7 @@ function validar(mostrar = true) {
     const varios = estado.equipamentos.length > 1;
     return [
       [srvMal, "tipo"], [momMal, "momento"], [garMal, "garantia"],
-      [numMal, "número do serviço"], [cliMal, "nome do cliente"], [morMal, "morada"],
+      [numMal, "número do serviço"], [numOmMal, "motivo da omissão do número"], [cliMal, "nome do cliente"], [morMal, "morada"],
       [tecMal, "registado por"], [estMal, "estado do serviço"], [motMal, "motivo"],
       [detMal, "detalhe do motivo"], [preMal, "o que o cliente pretende"],
       [fatMal, "fatura"], [empEtqMal, "etiqueta do emprestado"],
@@ -2756,6 +2762,7 @@ function validar(mostrar = true) {
     ? "O número do serviço tem 6 algarismos (ex.: 123456 ou 000006), ou marca que não o tens."
     : "O número do serviço tem 6 algarismos (ex.: 123456 ou 000006).";
   marcar("num", "num-err", numMal);
+  marcar(null, "num-om-err", numOmMal);
   marcar(null, "fat-err", fatMal);
   marcar("cliente", "cliente-err", cliMal);
   marcar("morada", "morada-err", morMal);
@@ -2784,7 +2791,7 @@ function validar(mostrar = true) {
   erroFotos.classList.toggle("show", fotMal || faltaEq || faltaEtq);
 
   const primeiro = srvMal ? "servicos" : momMal ? "momentos" : garMal ? "garantias"
-                 : numMal ? "num" : cliMal ? "cliente" : morMal ? "morada"
+                 : numMal ? "num" : numOmMal ? "dispensa-numero" : cliMal ? "cliente" : morMal ? "morada"
                  : tecMal ? "tec" : estMal ? "card-estado" : motMal ? "motivo"
                  : detMal ? "motivo-detalhe" : preMal ? "pretendido" : fatMal ? "fatura"
                  : empMal ? "emprestado" : null;
@@ -2798,7 +2805,7 @@ function validar(mostrar = true) {
   if (culpado >= 0) {
     levarA($("equipamentos").children[culpado], "center");
   }
-  return !(numMal || cliMal || morMal || preMal || tecMal || momMal || srvMal || garMal
+  return !(numMal || numOmMal || cliMal || morMal || preMal || tecMal || momMal || srvMal || garMal
            || fotMal || faltaEq || faltaEtq || fatMal || estMal || motMal || detMal || empMal);
 }
 
@@ -2927,7 +2934,7 @@ function construirCorpo(num, momento, servico, garantia = null) {
   const comMotivo = (texto, d) => (d.motivo ? `${texto} — "${d.motivo}"` : texto);
   const variosEq = estado.equipamentos.length > 1;
   if (mom.numeroDispensavel && !num && estado.dispensas.numero.marcada) {
-    omitidos.push(comMotivo("Número do serviço", estado.dispensas.numero));
+    omitidos.push(`Número do serviço — ${textoOmissao(estado.dispensas.numero)}`);
   }
   const omissao = (texto, d, arr) => {
     if (omissaoValida(d) && !temPronta(arr)) omitidos.push(`${texto} — ${textoOmissao(d)}`);
