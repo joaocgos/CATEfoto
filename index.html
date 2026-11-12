@@ -74,6 +74,9 @@
 
   html, body {
     margin: 0;
+    /* Desliga o «puxar para recarregar» do telemóvel: um deslize a mais no
+       topo recarregava a página e perdia o registo. */
+    overscroll-behavior-y: none;
     padding: 0;
     background: var(--bg);
     color: var(--ink);
