@@ -2088,6 +2088,7 @@ function caixaDispensa(dispensa, texto, aoMudar, motivos = null) {
     }
     marcar(null, "fot-err", false);
     marcar(null, "fat-err", false);
+    marcar(null, "num-om-err", false);
     if (aoMudar) aoMudar();
   });
   caixa.append(rotulo, motivo);
@@ -2331,6 +2332,8 @@ function actualizarEstadoServico() {
   });
   $("campo-motivo").hidden = !pedeMotivo();
   $("detalhe-lbl").textContent = pedeDetalhe() ? "Detalhe" : "Detalhe (opcional)";
+  // O assunto leva RESOLVIDO / PENDENTE: a linha para copiar tem de acompanhar.
+  actualizarAssunto();
   if (!pedeMotivo()) {
     marcar("motivo", "motivo-err", false);
     marcar("motivo-detalhe", "detalhe-err", false);
@@ -2612,6 +2615,7 @@ function actualizarCampoNumero() {
       ? "Nome do cliente"
       : "Nome do cliente (opcional)";
   }
+  if (!marcaMomento("numeroDispensavel")) marcar(null, "num-om-err", false);
   desenharDispensaNumero();
 }
 
