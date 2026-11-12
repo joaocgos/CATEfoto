@@ -272,11 +272,8 @@ aviso a dizer em qual e quando. É só informação: não desaconselha repetir, 
 etiqueta a mais nunca fez mal e uma a menos obriga a voltar ao equipamento.
 Esse aviso vive no telemóvel de quem as enviou, por isso outro técnico não o vê.
 
-Quando um registo segue sem etiquetas, o email leva sempre uma linha a dizer
-porquê — `Etiquetas: nenhuma neste registo.` — para quem arquiva distinguir uma
-omissão deliberada de um esquecimento. A linha nunca diz que as etiquetas «já
-foram enviadas» noutro registo: a app só sabe que foram *partilhadas*, não que o
-email saiu.
+Um registo com equipamento já não segue sem etiqueta: ou leva a etiqueta, ou a
+omissão com o motivo, em «Omitido por decisão de quem regista».
 
 ### Equipamento emprestado
 

@@ -124,6 +124,7 @@
   details.ajuda:not([open]) .ajuda-s .fechar { display: none; }
   .ajuda-corpo { padding: 0 20px 20px; border-top: 1px solid var(--line); }
   .ajuda-corpo h2 { margin: 22px 0 8px; }
+  .ajuda-corpo { padding-top: 4px; }
   .ajuda-corpo p, .ajuda-corpo li { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
   .ajuda-corpo p { margin: 0 0 8px; }
   .ajuda-corpo ol, .ajuda-corpo ul { margin: 0; padding-left: 20px; }
@@ -329,7 +330,7 @@
   .emp-pergunta { margin: 0; }
   .cel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .nota-btn {
-    border: 0; background: none; padding: 6px 2px; min-height: 32px;
+    border: 0; background: none; padding: 6px 2px; min-height: 40px;
     font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
     text-align: left; cursor: pointer;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -613,7 +614,7 @@
       <div class="titulo">
         <h1>CATEfoto</h1>
         <!-- Versão: sobe a cada publicação, para se ver no telemóvel se já está a mais recente. -->
-        <p>Registo fotográfico de serviço · <span id="versao">v1.0</span></p>
+        <p>Registo fotográfico de serviço · <span id="versao">v1.1</span></p>
       </div>
     </div>
   </header>
@@ -2918,19 +2919,6 @@ function construirCorpo(num, momento, servico, garantia = null) {
     `Fotografias: ${todas.length} (${kb(bytes)})`,
   ];
 
-  // Sem esta linha, quem abrir a caixa não distingue uma etiqueta dispensada
-  // de uma esquecida — e é essa a única diferença que interessa a quem arquiva.
-  const algumaEtiqueta = estado.equipamentos
-    .some((e) => e.etiquetas.some((f) => f.estado === "pronta"));
-  // Num levantamento de local não há equipamento nem etiqueta: dizer que
-  // faltam seria falar de uma coisa que não existe neste tipo de registo.
-  if (!algumaEtiqueta && !semEquipamentos()
-      && !estado.equipamentos.some((e) => e.dispensaEtiqueta.marcada)) {
-    // Só se diz o que é certo. A app sabe que as etiquetas foram PARTILHADAS
-    // noutro registo, não que o email saiu: afirmar «já enviadas» pôs uma
-    // prova falsa no arquivo sempre que o email ficou por enviar.
-    linhas.push("Etiquetas: nenhuma neste registo.");
-  }
 
   // Omissões assumidas por quem regista: ficam escritas, com o motivo quando
   // existe, para quem arquiva distinguir uma decisão de um esquecimento. Só
