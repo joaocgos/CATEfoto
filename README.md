@@ -147,11 +147,10 @@ regista é que se mantém.
 
 ### Descrição por fotografia
 
-Uma pergunta única, logo à entrada das fotografias: **"Estas fotografias
-precisam de descrição?"**. No caso comum fica desligada, e nada muda. Marcada,
-cada fotografia — de qualquer parte do registo, etiquetas incluídas — ganha um
-campo de texto opcional por baixo, até 140 caracteres, e a grelha passa de três
-colunas para uma só, com espaço para escrever.
+Cada miniatura, de qualquer parte do registo, tem por baixo **«＋ descrição»**.
+Tocar abre um campo só para essa fotografia (até 140 caracteres), numa linha
+inteira por baixo; Enter fecha-o e o botão passa a mostrar o texto («✎ …»). Quem
+não precisa não dá por nada.
 
 A descrição vai no corpo do email, junto da hora a que essa fotografia foi
 tirada:

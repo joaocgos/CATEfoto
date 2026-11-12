@@ -313,8 +313,6 @@
   /* ── Miniaturas ───────────────────────────────────────────────────────── */
   .thumbs { display: grid; gap: 10px; margin-top: 14px; }
   .thumbs.grid { grid-template-columns: repeat(3, 1fr); }
-  /* Com as descrições ligadas: miniatura pequena com o campo ao lado. */
-  .thumbs.lista { grid-template-columns: 76px 1fr; align-items: center; gap: 10px 12px; }
   .thumbs:empty { display: none; }
 
   .thumb {
@@ -325,7 +323,19 @@
     border: 1px solid var(--line);
   }
   .thumbs.grid .thumb { aspect-ratio: 1 / 1; }
-  .thumbs.lista .thumb { aspect-ratio: 1 / 1; }
+  /* «＋ descrição» por baixo de cada miniatura; o campo abre numa linha inteira
+     (dense: as miniaturas seguintes não deixam buracos na linha de cima). */
+  .thumbs.grid { grid-auto-flow: row dense; }
+  .emp-pergunta { margin: 0; }
+  .cel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .nota-btn {
+    border: 0; background: none; padding: 6px 2px; min-height: 32px;
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+    text-align: left; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nota-btn.tem { color: var(--ink); }
+  .thumbs .nota-campo { grid-column: 1 / -1; }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .thumb .size {
@@ -345,7 +355,6 @@
   .thumb .del svg { width: 16px; height: 16px; stroke: #fff; }
   .thumb .del::after { content: ""; position: absolute; inset: -4px; }
 
-  .notas-fotos-pergunta { margin: 0; }
   /* Estado do serviço: três botões numa linha, mais baixos que os dos passos. */
   /* Estado do serviço: uma linha por estado, ícone à esquerda. Em três
      colunas, «Não resolvido» partia-se em duas linhas e os outros não. */
@@ -752,17 +761,6 @@
                 placeholder="Ex.: instalar exaustor novo na cozinha, com saída para o exterior."
                 aria-describedby="pretendido-err"></textarea>
       <p class="err" role="alert" id="pretendido-err">Escreve o que o cliente pretende.</p>
-    </section>
-
-    <!-- Pergunta única: só com "sim" é que cada fotografia ganha um campo de
-         descrição. No caso comum fica sempre escondida. --------------------->
-    <section class="card">
-      <div class="card-head"><h2>Descrição das fotografias</h2></div>
-      <p class="card-hint">Normalmente não é preciso. Marca só se tiveres de explicar o que alguma fotografia mostra (ex.: «risco na porta»): aparece um campo ao lado de cada uma.</p>
-      <label class="dispensa-marca notas-fotos-pergunta">
-        <input type="checkbox" id="notas-fotos">
-        <span>Escrever uma descrição nas fotografias</span>
-      </label>
     </section>
 
     <!-- Folha de serviço: só quando há serviço associado --------------------->
@@ -1214,9 +1212,6 @@ const estado = {
   // Cada equipamento tem as suas etiquetas e as suas fotografias, para quem
   // recebe o email conseguir dizer que foto pertence a que máquina.
   equipamentos: [novoEquipamento()],
-  // Se as fotografias deste registo precisam de descrição. Enquanto não se
-  // marcar, nenhuma fotografia mostra o campo — é a pergunta que decide.
-  notasFotos: false,
   // A folha de serviço é do serviço, não de um equipamento — vive à parte.
   folha: [],
   // Fotografias do local, nos momentos sem equipamentos.
@@ -1817,15 +1812,15 @@ const kb = (bytes) => (bytes < 1024 * 1024
 // thumbs.appendChild(cartaoFoto(...)), o fragmento entrega os dois.
 function cartaoFoto(item, eq, alvo) {
   const frag = document.createDocumentFragment();
+  const cel = document.createElement("div");
+  cel.className = "cel";
   const div = document.createElement("div");
   div.className = "thumb" + (item.estado === "a-processar" ? " loading" : "");
-  frag.appendChild(div);
+  cel.appendChild(div);
+  frag.appendChild(cel);
 
   if (item.estado === "a-processar") {
     div.innerHTML = '<div class="spinner"></div>';
-    // Na lista, cada miniatura tem o seu campo ao lado: sem este espaço, a
-    // seguinte ocuparia a coluna do campo.
-    if (estado.notasFotos) frag.appendChild(document.createElement("div"));
     return frag;
   }
 
@@ -1848,15 +1843,42 @@ function cartaoFoto(item, eq, alvo) {
   btn.addEventListener("click", () => remover(item.id, eq, alvo));
   div.appendChild(btn);
 
-  if (estado.notasFotos) {
+  // A descrição é por fotografia e só quando é precisa: «＋ descrição» abre o
+  // campo desta; com texto, o botão mostra-o e volta a abri-lo.
+  const nb = document.createElement("button");
+  nb.type = "button";
+  nb.className = "nota-btn" + (item.nota ? " tem" : "");
+  nb.dataset.foto = item.id;
+  nb.textContent = item.nota ? "✎ " + item.nota : "＋ descrição";
+  nb.addEventListener("click", () => {
+    item.notaAberta = !item.notaAberta;
+    desenhar();
+    if (item.notaAberta) {
+      const c = document.querySelector(`.nota-campo[data-foto="${item.id}"]`);
+      if (c) c.focus();
+    }
+  });
+  cel.appendChild(nb);
+
+  if (item.notaAberta) {
     const campo = document.createElement("input");
     campo.type = "text";
     campo.className = "nota-campo";
     campo.dataset.foto = item.id;
-    campo.placeholder = "Descrição (opcional)";
+    campo.placeholder = "Ex.: risco na porta";
+    campo.setAttribute("aria-label", "Descrição da fotografia");
     campo.maxLength = 140;
     campo.value = item.nota || "";
-    campo.addEventListener("input", () => { item.nota = campo.value.trim(); });
+    campo.addEventListener("input", () => {
+      item.nota = campo.value.trim();
+      // Atualiza o botão sem redesenhar (não se perde o teclado).
+      const b = document.querySelector(`.nota-btn[data-foto="${item.id}"]`);
+      if (b) { b.textContent = item.nota ? "✎ " + item.nota : "＋ descrição"; b.classList.toggle("tem", !!item.nota); }
+    });
+    // Enter fecha o campo; o texto fica no botão.
+    campo.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); item.notaAberta = false; desenhar(); }
+    });
     frag.appendChild(campo);
   }
 
@@ -1935,7 +1957,7 @@ function construirSubseccao(eq, alvo, titulo, ajuda, entradaCam, entradaGal) {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
+  thumbs.className = "thumbs grid";
   col.itens.forEach((f) => thumbs.appendChild(cartaoFoto(f, eq, alvo)));
 
   bloco.append(cab, dica, pickers, thumbs);
@@ -1984,7 +2006,7 @@ function desenharFolha() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
+  thumbs.className = "thumbs grid";
   estado.folha.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "folha")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -2144,7 +2166,7 @@ function desenharFatura() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
+  thumbs.className = "thumbs grid";
   estado.fatura.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "fatura")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -2192,7 +2214,7 @@ function desenharLocal() {
   pickers.append(bCam, bGal);
 
   const thumbs = document.createElement("div");
-  thumbs.className = "thumbs " + (estado.notasFotos ? "lista" : "grid");
+  thumbs.className = "thumbs grid";
   estado.local.forEach((f) => thumbs.appendChild(cartaoFoto(f, 0, "local")));
 
   cartao.append(cab, dica, pickers, thumbs);
@@ -2221,7 +2243,7 @@ function desenharEmprestado() {
     cartao.appendChild(cab);
   }
   const rotulo = document.createElement("label");
-  rotulo.className = "dispensa-marca notas-fotos-pergunta";
+  rotulo.className = "dispensa-marca emp-pergunta";
   const marca = document.createElement("input");
   marca.type = "checkbox";
   marca.id = "emp-marca";
@@ -3181,8 +3203,6 @@ function recomeçar() {
   estado.estadoServico = null;
   $("motivo").value = "";
   $("motivo-detalhe").value = "";
-  estado.notasFotos = false;
-  $("notas-fotos").checked = false;
   $("ajuda").open = false;
   $("num").disabled = false;
   ["morada", "contacto", "pretendido"].forEach((id) => { $(id).value = ""; });
@@ -3396,14 +3416,6 @@ $("cliente").addEventListener("input", (e) => {
 
 // Tal como os outros campos: o erro sai assim que o campo fica valido, em vez
 // de ficar vermelho ate se voltar a carregar em Partilhar.
-// Desligar a pergunta esconde os campos, mas o que já estava escrito não deve
-// ficar à espera escondido: ou é enviado sem se ver, ou fica invisível para
-// sempre. Limpa-se, tal como uma dispensa desligada limpa o motivo.
-$("notas-fotos").addEventListener("change", (e) => {
-  estado.notasFotos = e.target.checked;
-  if (!e.target.checked) todosItens().forEach((f) => { if (f) f.nota = ""; });
-  desenhar();
-});
 
 $("morada").addEventListener("input", (e) => {
   if (e.target.value.trim().length >= 3) marcar("morada", "morada-err", false);

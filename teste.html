@@ -328,20 +328,20 @@ async function correr() {
   escrever("num", "000128"); escrever("tec", "Teste");
   omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   ok("Por omissão não há campos", d.querySelectorAll(".nota-campo").length === 0);
-  el("notas-fotos").click();
-  await esperar(250);
+  ok("Cada miniatura tem «＋ descrição»", d.querySelectorAll(".nota-btn").length === 1);
+  d.querySelector(".nota-btn").click();
+  await esperar(100);
   const campo = d.querySelector(".nota-campo");
+  ok("Tocar abre o campo só dessa fotografia", !!campo && d.querySelectorAll(".nota-campo").length === 1);
   campo.focus(); campo.value = "risco na porta"; campo.dispatchEvent(new w.Event("input", { bubbles: true }));
   await juntar("Fotografias");           // o redesenho não pode tirar o foco do campo
   const ativo = d.activeElement;
   ok("Escrever não perde o foco quando outra fotografia acaba", ativo && ativo.classList.contains("nota-campo") && ativo.dataset.foto === campo.dataset.foto, ativo && ativo.tagName);
+  ok("O botão mostra a descrição", d.querySelector(".nota-btn").textContent.includes("risco na porta"));
   E("estado.equipamentos[0].fotos.forEach((f) => { if (!f.capturada) f.capturada = new Date(); })");
   p = await partilhar();
   ok("A descrição vai junto da hora da fotografia", p && /· 01 — .* — "risco na porta"/.test(p.text), p && p.text.split("\n").filter((l) => l.includes("·")));
   ok("A fotografia sem descrição não leva aspas", p && !p.text.includes('— ""'));
-  el("notas-fotos").click();
-  await esperar(250);
-  ok("Desligar a pergunta apaga as descrições", E("estado.equipamentos[0].fotos.every((f) => !f.nota)"));
   await novo();
 
   titulo("Equipamento emprestado");
