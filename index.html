@@ -124,16 +124,10 @@
   details.ajuda:not([open]) .ajuda-s .fechar { display: none; }
   .ajuda-corpo { padding: 0 20px 20px; border-top: 1px solid var(--line); }
   .ajuda-corpo h2 { margin: 22px 0 8px; }
-  .ajuda-corpo .ajuda-aviso + h2 { margin-top: 20px; }
   .ajuda-corpo p, .ajuda-corpo li { font-size: 14px; line-height: 1.5; color: var(--ink-2); }
   .ajuda-corpo p { margin: 0 0 8px; }
   .ajuda-corpo ol, .ajuda-corpo ul { margin: 0; padding-left: 20px; }
   .ajuda-corpo li { margin: 4px 0; }
-  .ajuda-aviso {
-    margin: 16px 0 0; padding: 12px 14px; border-radius: 12px;
-    background: var(--red-soft); color: var(--ink);
-  }
-  .ajuda-aviso p { margin: 0; color: var(--ink); }
   .ajuda-corpo a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
   .ajuda-mais { margin: 22px 0 0; }
   .ajuda-mais span { display: block; margin-top: 4px; font-size: 13px; color: var(--muted); }
@@ -624,23 +618,20 @@
         <span class="ajuda-s"><span class="abrir">Ler as instruções</span><span class="fechar">Fechar</span></span>
       </summary>
       <div class="ajuda-corpo">
-        <div class="ajuda-aviso">
-          <p><b>Só está enviado quando vires «Enviado».</b> Sem rede, usa «Sem rede? Partilhar pela app de email» e carrega em enviar dentro do email.</p>
-        </div>
-
-        <h2>Passo a passo</h2>
-        <ol>
-          <li>Escolhe o <b>tipo de serviço</b> e o <b>momento</b>, e indica a <b>garantia</b> (no Orçamento não há).</li>
-          <li>Escreve o <b>número do serviço</b> (letras maiúsculas, algarismos e traços, sem espaços) e o teu nome.</li>
-          <li>Tira as fotografias com <b>Câmara</b>, ou escolhe-as da <b>Galeria</b>. O ✕ da miniatura apaga uma.</li>
-          <li>Toca em <b>Enviar registo</b> e espera pelo ecrã <b>Enviado</b>.</li>
-        </ol>
-
         <h2>Da primeira vez</h2>
+        <p>No fim do formulário, em <b>Enviar para</b>, escolhe a tua <b>loja</b> e escreve o <b>código de envio</b> que a loja te deu. Ficam guardados no telemóvel.</p>
+
+        <h2>Em cada serviço</h2>
         <ol>
-          <li>No fim do formulário, no cartão <b>Enviar para</b>, escolhe a tua <b>loja</b>.</li>
-          <li>Escreve o <b>código de envio</b> que a loja te deu. Fica guardado no telemóvel.</li>
+          <li>Escolhe o <b>tipo</b>, o <b>momento</b> e a <b>garantia</b>.</li>
+          <li>Escreve o <b>número do serviço</b>: 6 algarismos, com os zeros do início (ex.: 000006).</li>
+          <li>Tira as fotografias com <b>Câmara</b> ou escolhe-as da <b>Galeria</b>. O ✕ apaga uma.</li>
+          <li>Enquanto o botão estiver cinzento, a linha <b>Falta:</b> por baixo dele diz o que ainda falta.</li>
+          <li>Toca em <b>Enviar registo</b>. Só está enviado quando aparecer <b>Enviado</b>.</li>
         </ol>
+
+        <h2>Sem rede</h2>
+        <p>Toca em <b>Sem rede? Partilhar pela app de email</b> e carrega em enviar dentro do email. Nada se perde até tocares em <b>Novo registo</b>.</p>
 
         <p class="ajuda-mais">
           <a href="manual.html" target="_blank" rel="noopener">Abrir o manual completo</a>
@@ -765,9 +756,11 @@
     <!-- Pergunta única: só com "sim" é que cada fotografia ganha um campo de
          descrição. No caso comum fica sempre escondida. --------------------->
     <section class="card">
+      <div class="card-head"><h2>Descrição das fotografias</h2></div>
+      <p class="card-hint">Normalmente não é preciso. Marca só se tiveres de explicar o que alguma fotografia mostra (ex.: «risco na porta»): aparece um campo ao lado de cada uma.</p>
       <label class="dispensa-marca notas-fotos-pergunta">
         <input type="checkbox" id="notas-fotos">
-        <span>Estas fotografias precisam de descrição?</span>
+        <span>Escrever uma descrição nas fotografias</span>
       </label>
     </section>
 
@@ -2410,6 +2403,12 @@ function redesenhar() {
   $("send").disabled = todas.length === 0;
   actualizarBotaoEnviar();
 }
+
+// As instruções fecham-se ao tocar fora delas.
+document.addEventListener("click", (e) => {
+  const ajuda = $("ajuda");
+  if (ajuda.open && !ajuda.contains(e.target)) ajuda.open = false;
+});
 
 // O botão só ganha cor quando o registo está completo.
 function actualizarBotaoEnviar() {
