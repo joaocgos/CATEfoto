@@ -290,7 +290,7 @@ Na **Reparação** e na **Montagem** (marca `estadoServico`): Resolvido,
 Parcial ou Não resolvido, obrigatório. Fora do «Resolvido» pede um motivo da
 lista `MOTIVOS_PENDENTE` (obrigatório) e um detalhe, obrigatório só com
 «Outro». No corpo: `Estado: Não resolvido — Falta de peça ("…")`, logo a
-seguir à garantia. Parcial e Não resolvido acrescentam `· PENDENTE` ao fim do
+seguir à garantia. Resolvido acrescenta `· RESOLVIDO`; Parcial e Não resolvido acrescentam `· PENDENTE` ao fim do
 assunto, para se verem logo na caixa de entrada.
 
 ### Corte automático
@@ -522,7 +522,7 @@ momento e o tipo, por esta ordem: `000123 · OFICINA · DOMESTICO`. O número
 vem à frente porque a lista do email no telemóvel mostra pouco mais de 30
 caracteres, e é por ele que se procura um registo; a garantia fica de fora
 porque vai no corpo, por extenso. Um serviço por acabar (estado Parcial ou Não
-resolvido) leva `· PENDENTE` no fim. Nos ficheiros, o tipo e a garantia entram por
+resolvido) leva `· PENDENTE` no fim; um resolvido, `· RESOLVIDO`. Nos ficheiros, o tipo e a garantia entram por
 códigos curtos — `dom`, `hot`, `ac`, `ind` e `gar`, `fg`, `gi` (garantia por confirmar) — porque é o que mais pesa no
 comprimento do nome.
 

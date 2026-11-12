@@ -403,7 +403,7 @@ async function correr() {
   ok("Botão com cor quando está completo", !el("send").classList.contains("incompleto"));
   ok("Resolvido não pede motivo", el("campo-motivo").hidden);
   p = await partilhar();
-  ok("Resolvido: assunto sem PENDENTE", p && p.title === "000151 · MONTAGEM · DOMESTICO", p && p.title);
+  ok("Resolvido: assunto acaba em RESOLVIDO", p && p.title === "000151 · MONTAGEM · DOMESTICO · RESOLVIDO", p && p.title);
   ok("Corpo: «Estado: Resolvido»", p && p.text.includes("Estado: Resolvido\n"));
   await novo();
   ok("Novo registo limpa o estado", E("estado.estadoServico === null") && el("motivo").value === "");

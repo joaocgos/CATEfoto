@@ -3006,7 +3006,9 @@ function assuntoDoRegisto() {
   const cliente = clientePedido() ? $("cliente").value.trim() : "";
   const quem = num || cliente;
   // Serviço por acabar (Parcial ou Não resolvido): vê-se logo na caixa de entrada.
-  const pendente = pedeMotivo() ? " · PENDENTE" : "";
+  // Onde se pede o estado: RESOLVIDO ou PENDENTE no fim, para se ler logo na caixa.
+  const pendente = pedeMotivo() ? " · PENDENTE"
+    : pedeEstado() && estado.estadoServico === "resolvido" ? " · RESOLVIDO" : "";
   return quem ? `${quem} · ${mom.marca} · ${srv.marca}${pendente}` : "";
 }
 
