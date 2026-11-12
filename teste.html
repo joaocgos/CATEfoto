@@ -431,7 +431,9 @@ async function correr() {
   omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias", 2);
   el("send").click(); await esperar(300);
   ok("Sem loja nem código, não envia", pedidos.length === 0 && el("loja-err").classList.contains("show") && el("codigo-err").classList.contains("show"));
+  ok("Sem loja, o atalho pede-a", el("ir-lojas").textContent === "Escolher loja ↓", el("ir-lojas").textContent);
   botao("lojas-escolha", "Porto").click();
+  ok("Com loja, o atalho diz o destino", el("ir-lojas").textContent === "Para: Porto ↓", el("ir-lojas").textContent);
   escrever("codigo-envio", "segredo");
   ok("A loja e o código ficam guardados", E("localStorage.getItem('catefoto.loja')") === "porto" && E("localStorage.getItem('catefoto.codigo')") === "segredo");
   respostaServidor = { status: 401, corpo: { ok: false, erro: "codigo" } };

@@ -3317,7 +3317,10 @@ function desenharLojas() {
   $("envio-direto").hidden = !direto;
   $("lojas").hidden = direto;
   $("send-txt").textContent = direto ? "Enviar registo" : "Partilhar registo";
-  $("ir-lojas").textContent = direto ? "Loja ↓" : "Enviar para ↓";
+  // No envio direto o atalho diz para onde vai, ou pede a loja.
+  const lojaAtual = direto && lojaEscolhida();
+  $("ir-lojas").textContent = !direto ? "Enviar para ↓"
+    : lojaAtual ? `Para: ${lojaAtual.nome} ↓` : "Escolher loja ↓";
   if (direto) {
     $("card-lojas").querySelector(".card-hint").textContent =
       "O registo segue sozinho para a caixa da tua loja. A loja e o código ficam guardados neste telemóvel.";
