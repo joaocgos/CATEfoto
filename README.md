@@ -283,8 +283,8 @@ email saiu.
 
 Na **Recolha** a app pergunta «Ficou algum equipamento emprestado?» e na
 **Entrega** «Foi devolvido algum equipamento emprestado?» (marca `emprestimo`
-em `MOMENTOS`). Com «sim» aparece um cartão com etiqueta (opcional) e
-fotografias do emprestado; marcado e vazio, não parte. Os ficheiros levam
+em `MOMENTOS`). Com «sim» aparece um cartão com etiqueta e
+fotografias do emprestado, ambas obrigatórias (ou omitidas com motivo). Os ficheiros levam
 `emprestado_etiqueta_NN` e `emprestado_NN`, e o corpo uma linha
 «Equipamento emprestado: …».
 
@@ -366,7 +366,6 @@ pelo código. As marcas existentes:
 
     numeroOpcional: true
     numeroDispensavel: true
-    etiquetaObrigatoria: true
     faturaObrigatoria: true
     campoRecebidoPor: true
     ajudaEtiquetas: "..."
@@ -395,11 +394,15 @@ marcar a dispensa — e aí são ambos obrigatórios. Com número, o serviço j�
 de quem é e onde, e os campos ficam escondidos (o que lá estiver escrito não
 segue). No Orçamento o nome do cliente e a morada estão sempre à vista.
 
-`etiquetaObrigatoria` está ligada na **Entrada Oficina** e na **Montagem**: é
-pela etiqueta que a oficina identifica a máquina que acabou de entrar. O cartão
-passa a dizer "Etiquetas · obrigatória" e, se faltar, a validação aponta o
-equipamento em causa. Como há etiquetas ilegíveis ou arrancadas, cada equipamento
-tem a sua caixa de dispensa. Nos outros momentos as etiquetas são opcionais.
+**Etiqueta e fotografias de cada equipamento são obrigatórias** em todos os
+momentos com equipamento (desde 2026-11-12), também no equipamento emprestado.
+Quando não dá, marca-se a omissão e escolhe-se o motivo:
+- etiqueta: Etiqueta ilegível, Sem etiqueta, Sem acesso à etiqueta, Outro;
+- fotografias: Sem acesso ao equipamento, Cliente não autorizou, Equipamento não
+  estava no local, Outro.
+
+«Outro» obriga a escrever o detalhe. A omissão segue no email, em «Omitido por
+decisão de quem regista».
 
 `faturaObrigatoria` marca o **primeiro contacto** — Recolha, Reparação no
 local, Entrada Oficina e Montagem. Aí, em garantia, a fatura passa a

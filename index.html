@@ -578,7 +578,8 @@
     width: 24px; height: 24px; flex: none; margin: 0;
     accent-color: var(--red);
   }
-  input.dispensa-motivo { height: 44px; margin-top: 8px; font-size: 14px; }
+  input.dispensa-motivo, select.dispensa-motivo { height: 44px; margin-top: 8px; font-size: 14px; }
+  select.dispensa-motivo { padding-top: 0; padding-bottom: 0; }
   #num:disabled { opacity: .45; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -795,7 +796,7 @@
 
     <!-- Equipamento emprestado: Recolha e Entrega (marca emprestimo) --------->
     <div id="emprestado"></div>
-    <p class="err" role="alert" id="emp-err">Junta a etiqueta ou fotografias do emprestado, ou desmarca a pergunta.</p>
+    <p class="err" role="alert" id="emp-err">Junta a etiqueta e as fotografias do emprestado (ou marca a omissão com o motivo), ou desmarca a pergunta.</p>
 
     <!-- Estado do serviço: no fim, que é quando se sabe (estadoServico) ----->
     <section class="card" id="card-estado" hidden>
@@ -1052,7 +1053,6 @@ const MOMENTOS = [
   { chave: "oficina", nome: "Entrada Oficina", detalhe: "por técnico ou pelo balcão",
     marca: "OFICINA", texto: "Entrada em oficina",
     // É pela etiqueta que a oficina identifica a máquina que acabou de entrar.
-    etiquetaObrigatoria: true,
     faturaObrigatoria: true,
     ajudaEtiquetas: "A etiqueta com a marca, o modelo e o número de série. É por " +
                     "ela que a oficina identifica a máquina, por isso não pode faltar.",
@@ -1071,7 +1071,6 @@ const MOMENTOS = [
     marca: "MONTAGEM", texto: "Montagem de equipamento novo (instalação)",
     // Num equipamento novo é o número de série que dá acesso à garantia: se não
     // ficar registado agora, pode ser preciso voltar lá para o ir buscar.
-    etiquetaObrigatoria: true,
     faturaObrigatoria: true,
     ajudaEtiquetas: "A etiqueta com a marca, o modelo e o número de série — " +
                     "é o que dá acesso à garantia do equipamento novo.",
@@ -1156,6 +1155,21 @@ const MOTIVOS_PENDENTE = [
   "Outro",
 ];
 
+// Etiqueta e fotografias de cada equipamento são obrigatórias; quando não dá,
+// omite-se com um destes motivos (decididos com o utilizador em 2026-11-12).
+// «Outro» obriga a escrever o detalhe.
+const MOTIVOS_OMITIR_ETIQUETA = ["Etiqueta ilegível", "Sem etiqueta", "Sem acesso à etiqueta", "Outro"];
+const MOTIVOS_OMITIR_FOTOS = ["Sem acesso ao equipamento", "Cliente não autorizou",
+                              "Equipamento não estava no local", "Outro"];
+const novaOmissao = () => ({ marcada: false, motivo: "", detalhe: "" });
+const omissaoValida = (d) => d.marcada && !!d.motivo
+  && (d.motivo !== "Outro" || d.detalhe.trim().length >= 3);
+const textoOmissao = (d) => (d.motivo === "Outro" ? `Outro — "${d.detalhe.trim()}"` : d.motivo);
+const temPronta = (arr) => arr.some((f) => f.estado === "pronta");
+// Um equipamento (ou o emprestado) está em ordem quando tem a coisa ou a omissão.
+const etiquetaEmOrdem = (e) => temPronta(e.etiquetas) || omissaoValida(e.dispensaEtiqueta);
+const fotosEmOrdem = (e) => temPronta(e.fotos) || omissaoValida(e.dispensaFotos);
+
 const POR_CHAVE = (lista) => Object.fromEntries(lista.map((t) => [t.chave, t]));
 const MOMENTO_POR_CHAVE = POR_CHAVE(MOMENTOS);
 const SERVICO_POR_CHAVE = POR_CHAVE(SERVICOS);
@@ -1185,10 +1199,13 @@ const novasDispensas = () => ({
 // Um equipamento: as suas fotos e a dispensa da sua etiqueta.
 const novoEquipamento = () => ({
   etiquetas: [], fotos: [],
-  dispensaEtiqueta: { marcada: false, motivo: "" },
+  dispensaEtiqueta: novaOmissao(), dispensaFotos: novaOmissao(),
 });
 
-const novoEmprestado = () => ({ ativo: false, etiquetas: [], fotos: [] });
+const novoEmprestado = () => ({
+  ativo: false, etiquetas: [], fotos: [],
+  dispensaEtiqueta: novaOmissao(), dispensaFotos: novaOmissao(),
+});
 
 const estado = {
   momento: null,
@@ -1983,7 +2000,7 @@ function desenharFolha() {
 // Serve para o número, a etiqueta de cada equipamento e a fatura. Os cartões
 // são desenhados de novo a cada mudança, por isso o estado vive no objecto e a
 // caixa só o mostra.
-function caixaDispensa(dispensa, texto, aoMudar) {
+function caixaDispensa(dispensa, texto, aoMudar, motivos = null) {
   const caixa = document.createElement("div");
   caixa.className = "dispensa";
 
@@ -1996,25 +2013,58 @@ function caixaDispensa(dispensa, texto, aoMudar) {
   frase.textContent = texto;
   rotulo.append(marca, frase);
 
-  const motivo = document.createElement("input");
-  motivo.type = "text";
-  motivo.className = "dispensa-motivo";
-  motivo.placeholder = "Motivo (opcional)";
-  motivo.maxLength = 120;
+  // Com `motivos`: lista obrigatória e, em «Outro», um detalhe obrigatório.
+  // Sem lista: motivo livre e opcional (número, fatura).
+  let motivo, detalhe = null;
+  if (motivos) {
+    motivo = document.createElement("select");
+    motivo.className = "dispensa-motivo";
+    motivo.setAttribute("aria-label", "Motivo da omissão");
+    const vazio = document.createElement("option");
+    vazio.value = ""; vazio.textContent = "Escolhe o motivo";
+    motivo.appendChild(vazio);
+    motivos.forEach((m) => {
+      const o = document.createElement("option");
+      o.value = o.textContent = m;
+      motivo.appendChild(o);
+    });
+    detalhe = document.createElement("input");
+    detalhe.type = "text";
+    detalhe.className = "dispensa-motivo";
+    detalhe.placeholder = "Qual o motivo?";
+    detalhe.maxLength = 120;
+    detalhe.value = dispensa.detalhe || "";
+    detalhe.hidden = !dispensa.marcada || dispensa.motivo !== "Outro";
+    detalhe.addEventListener("input", () => { dispensa.detalhe = detalhe.value; });
+    motivo.addEventListener("change", () => {
+      dispensa.motivo = motivo.value;
+      detalhe.hidden = motivo.value !== "Outro";
+      if (motivo.value === "Outro") detalhe.focus();
+    });
+  } else {
+    motivo = document.createElement("input");
+    motivo.type = "text";
+    motivo.className = "dispensa-motivo";
+    motivo.placeholder = "Motivo (opcional)";
+    motivo.maxLength = 120;
+    motivo.addEventListener("input", () => { dispensa.motivo = motivo.value.trim(); });
+  }
   motivo.value = dispensa.motivo;
   motivo.hidden = !dispensa.marcada;
 
   marca.addEventListener("change", () => {
     dispensa.marcada = marca.checked;
     motivo.hidden = !marca.checked;
-    if (!marca.checked) { dispensa.motivo = ""; motivo.value = ""; }
+    if (!marca.checked) {
+      dispensa.motivo = ""; motivo.value = "";
+      if (detalhe) { dispensa.detalhe = ""; detalhe.value = ""; detalhe.hidden = true; }
+    }
     marcar(null, "fot-err", false);
     marcar(null, "fat-err", false);
     if (aoMudar) aoMudar();
   });
-  motivo.addEventListener("input", () => { dispensa.motivo = motivo.value.trim(); });
-
   caixa.append(rotulo, motivo);
+  if (detalhe) caixa.append(detalhe);
   return caixa;
 }
 
@@ -2190,12 +2240,19 @@ function desenharEmprestado() {
   cartao.appendChild(rotulo);
 
   if (estado.emprestado.ativo) {
-    cartao.appendChild(construirSubseccao("emp", "etiquetas", "Etiqueta do emprestado",
-      "A etiqueta com a marca, o modelo e o número de série. Não é obrigatória, mas " +
-      "é por ela que se sabe que equipamento é.", "in-etq-cam", "in-etq-gal"));
-    cartao.appendChild(construirSubseccao("emp", "fotos", "Fotografias do emprestado",
+    const emp = estado.emprestado;
+    const subEtq = construirSubseccao("emp", "etiquetas", "Etiqueta do emprestado · obrigatória",
+      "A etiqueta com a marca, o modelo e o número de série. Se não der, marca a " +
+      "omissão por baixo e escolhe o motivo.", "in-etq-cam", "in-etq-gal");
+    subEtq.appendChild(caixaDispensa(emp.dispensaEtiqueta,
+      "Não dá para fotografar a etiqueta — omitir (fica registado)", null, MOTIVOS_OMITIR_ETIQUETA));
+    cartao.appendChild(subEtq);
+    const subFot = construirSubseccao("emp", "fotos", "Fotografias do emprestado · obrigatória",
       "O estado em que o equipamento emprestado fica. Riscos e amolgadelas de perto.",
-      "in-fot-cam", "in-fot-gal"));
+      "in-fot-cam", "in-fot-gal");
+    subFot.appendChild(caixaDispensa(emp.dispensaFotos,
+      "Não dá para fotografar o equipamento — omitir (fica registado)", null, MOTIVOS_OMITIR_FOTOS));
+    cartao.appendChild(subFot);
   }
   caixa.appendChild(cartao);
 }
@@ -2301,26 +2358,32 @@ function desenharEquipamentos() {
     const subEtiquetas = construirSubseccao(
       eq, "etiquetas", obrigatoria ? "Etiquetas · obrigatória" : "Etiquetas",
       (m.ajudaEtiquetas || "A etiqueta com a marca, o modelo e o número de série.") +
-        (obrigatoria ? " Se a etiqueta não se lê ou não existe, marca a caixa por baixo." : ""),
+        (obrigatoria ? " Se não der, marca a omissão por baixo e escolhe o motivo." : ""),
       "in-etq-cam", "in-etq-gal");
     // Obrigatória, mas há etiquetas que não se leem ou já não existem: aí
-    // dispensa-se, e fica escrito. Antes, esse caso era um beco sem saída.
+    // omite-se com um motivo, e fica escrito.
     if (obrigatoria) {
       subEtiquetas.appendChild(caixaDispensa(
         estado.equipamentos[eq].dispensaEtiqueta,
-        "Etiqueta ilegível ou inexistente — omitir (fica registado)"));
+        "Não dá para fotografar a etiqueta — omitir (fica registado)",
+        null, MOTIVOS_OMITIR_ETIQUETA));
     }
     cartao.appendChild(subEtiquetas);
 
-    cartao.appendChild(construirSubseccao(
-      eq, "fotos", "Fotografias",
+    const subFotos = construirSubseccao(
+      eq, "fotos", "Fotografias · obrigatória",
       // Um risco fino numa foto do equipamento inteiro não sobrevive a
       // nenhuma compressão; de perto, sobrevive a todas. É a foto de perto
       // que prova o dano — medido em 2026-09-11.
       m.ajudaFotos || "O estado do equipamento. Se houver riscos ou " +
                       "amolgadelas, tira também uma foto de perto a cada " +
                       "um — é a de perto que prova o dano.",
-      "in-fot-cam", "in-fot-gal"));
+      "in-fot-cam", "in-fot-gal");
+    subFotos.appendChild(caixaDispensa(
+      estado.equipamentos[eq].dispensaFotos,
+      "Não dá para fotografar o equipamento — omitir (fica registado)",
+      null, MOTIVOS_OMITIR_FOTOS));
+    cartao.appendChild(subFotos);
 
     caixa.appendChild(cartao);
   });
@@ -2531,7 +2594,8 @@ const marcaMomento = (nome) => {
 };
 
 const semEquipamentos = () => marcaMomento("semEquipamentos");
-const etiquetaObrigatoria = () => marcaMomento("etiquetaObrigatoria");
+// Desde 2026-11-12 a etiqueta é obrigatória em todos os momentos com equipamento.
+const etiquetaObrigatoria = () => !semEquipamentos();
 const precisaGarantia = () => !marcaMomento("semGarantia");
 const temServicoExterno = () => !marcaMomento("semServicoExterno");
 // Obrigatória com dispensa, no primeiro contacto e só em garantia.
@@ -2636,38 +2700,33 @@ function validar(mostrar = true) {
   const motMal = pedeMotivo() && !$("motivo").value;
   const detMal = pedeDetalhe() && $("motivo-detalhe").value.trim().length < 3;
   // Marcar que ficou um emprestado e não juntar nada é quase sempre esquecimento.
-  const empMal = emprestimoAtivo() && ![...estado.emprestado.etiquetas, ...estado.emprestado.fotos]
-    .some((f) => f.estado === "pronta");
+  const empEtqMal = emprestimoAtivo() && !etiquetaEmOrdem(estado.emprestado);
+  const empFotMal = emprestimoAtivo() && !fotosEmOrdem(estado.emprestado);
+  const empMal = empEtqMal || empFotMal;
 
-  // Com vários equipamentos declarados, um bloco vazio é quase sempre um
-  // esquecimento — vale a pena dizer qual, em vez de deixar passar.
+  // Cada equipamento precisa da etiqueta e das fotografias, ou da omissão com
+  // motivo. Diz-se qual, em vez de deixar passar.
   const semEq = semEquipamentos();
-  const vazio = semEq ? -1 : estado.equipamentos.findIndex(
-    (e) => ![...e.etiquetas, ...e.fotos].some((f) => f.estado === "pronta"));
-  const faltaEq = !fotMal && !semEq && estado.equipamentos.length > 1 && vazio >= 0;
-
-  // Há momentos em que a etiqueta é o que identifica a máquina; aí não se deixa
-  // passar sem ela.
-  const semEtq = etiquetaObrigatoria() && !semEq
-    ? estado.equipamentos.findIndex(
-        (e) => !e.etiquetas.some((f) => f.estado === "pronta")
-               && !e.dispensaEtiqueta.marcada)
-    : -1;
-  const faltaEtq = !fotMal && !faltaEq && semEtq >= 0;
+  const semEtq = semEq ? -1 : estado.equipamentos.findIndex((e) => !etiquetaEmOrdem(e));
+  const vazio = semEq ? -1 : estado.equipamentos.findIndex((e) => !fotosEmOrdem(e));
+  const faltaEtq = semEtq >= 0;
+  const faltaEq = vazio >= 0;
 
   if (!mostrar) {
     const etq = semEtq + 1;
+    const varios = estado.equipamentos.length > 1;
     return [
       [srvMal, "tipo"], [momMal, "momento"], [garMal, "garantia"],
       [numMal, "número do serviço"], [cliMal, "nome do cliente"], [morMal, "morada"],
       [tecMal, "registado por"], [estMal, "estado do serviço"], [motMal, "motivo"],
       [detMal, "detalhe do motivo"], [preMal, "o que o cliente pretende"],
-      [fatMal, "fatura"], [empMal, "fotografias do emprestado"],
+      [fatMal, "fatura"], [empEtqMal, "etiqueta do emprestado"],
+      [empFotMal, "fotografias do emprestado"],
       // Diz que fotografias faltam, não só «fotografias».
-      [semEtq >= 0, estado.equipamentos.length > 1 ? `etiqueta do equipamento ${etq}` : "etiqueta"],
+      [faltaEtq, varios ? `etiqueta do equipamento ${etq}` : "etiqueta"],
+      [faltaEq, varios ? `fotografias do equipamento ${vazio + 1}` : "fotografias do equipamento"],
       [fotMal && semEq, "fotografias do local"],
-      [fotMal && !semEq && semEtq < 0, "fotografias do equipamento"],
-      [faltaEq, `fotografias do equipamento ${vazio + 1}`],
+      [fotMal && !semEq && !faltaEtq && !faltaEq, "pelo menos uma fotografia"],
     ].filter(([mal]) => mal).map(([, nome]) => nome);
   }
   $("num-err").textContent = marcaMomento("numeroDispensavel")
@@ -2688,14 +2747,16 @@ function validar(mostrar = true) {
   marcar(null, "emp-err", empMal);
   const erroFotos = $("fot-err");
   const varios = estado.equipamentos.length > 1;
-  if (fotMal) {
-    erroFotos.textContent = "Junta pelo menos uma fotografia.";
-  } else if (faltaEq) {
-    erroFotos.textContent = `O equipamento ${vazio + 1} não tem fotografias.`;
-  } else if (faltaEtq) {
+  if (faltaEtq) {
     erroFotos.textContent = varios
-      ? `O equipamento ${semEtq + 1} não tem etiqueta — junta-a, ou marca que a etiqueta não se lê.`
-      : "Falta a etiqueta do equipamento — junta-a, ou marca que a etiqueta não se lê.";
+      ? `O equipamento ${semEtq + 1} não tem etiqueta — junta-a, ou marca a omissão e escolhe o motivo.`
+      : "Falta a etiqueta do equipamento — junta-a, ou marca a omissão e escolhe o motivo.";
+  } else if (faltaEq) {
+    erroFotos.textContent = varios
+      ? `O equipamento ${vazio + 1} não tem fotografias — junta-as, ou marca a omissão e escolhe o motivo.`
+      : "Faltam as fotografias do equipamento — junta-as, ou marca a omissão e escolhe o motivo.";
+  } else if (fotMal) {
+    erroFotos.textContent = "Junta pelo menos uma fotografia.";
   }
   erroFotos.classList.toggle("show", fotMal || faltaEq || faltaEtq);
 
@@ -2710,7 +2771,7 @@ function validar(mostrar = true) {
       $(primeiro).focus({ preventScroll: true });
     }
   }
-  const culpado = faltaEq ? vazio : faltaEtq ? semEtq : -1;
+  const culpado = faltaEtq ? semEtq : faltaEq ? vazio : -1;
   if (culpado >= 0) {
     levarA($("equipamentos").children[culpado], "center");
   }
@@ -2777,7 +2838,7 @@ function linhaEmprestado(mom) {
   if (e) partes.push(e + (e === 1 ? " etiqueta" : " etiquetas"));
   if (f) partes.push(f + (f === 1 ? " fotografia" : " fotografias"));
   const rotulo = mom.chave === "entrega" ? "Equipamento emprestado devolvido" : "Equipamento emprestado";
-  return `${rotulo}: ${partes.join(", ")}`;
+  return `${rotulo}: ${partes.length ? partes.join(", ") : "sem fotografias (ver omissões)"}`;
 }
 
 // " — <texto>" atrás da hora da fotografia, só quando há descrição escrita.
@@ -2858,13 +2919,19 @@ function construirCorpo(num, momento, servico, garantia = null) {
   if (mom.numeroDispensavel && !num && estado.dispensas.numero.marcada) {
     omitidos.push(comMotivo("Número do serviço", estado.dispensas.numero));
   }
-  if (mom.etiquetaObrigatoria && !mom.semEquipamentos) {
+  const omissao = (texto, d, arr) => {
+    if (omissaoValida(d) && !temPronta(arr)) omitidos.push(`${texto} — ${textoOmissao(d)}`);
+  };
+  if (!mom.semEquipamentos) {
     estado.equipamentos.forEach((e, i) => {
-      if (e.dispensaEtiqueta.marcada && !e.etiquetas.some((f) => f.estado === "pronta")) {
-        omitidos.push(comMotivo(variosEq ? `Etiqueta do equipamento ${i + 1}`
-                                         : "Etiqueta do equipamento", e.dispensaEtiqueta));
-      }
+      const qual = variosEq ? ` do equipamento ${i + 1}` : " do equipamento";
+      omissao("Etiqueta" + qual, e.dispensaEtiqueta, e.etiquetas);
+      omissao("Fotografias" + qual, e.dispensaFotos, e.fotos);
     });
+  }
+  if (emprestimoAtivo()) {
+    omissao("Etiqueta do emprestado", estado.emprestado.dispensaEtiqueta, estado.emprestado.etiquetas);
+    omissao("Fotografias do emprestado", estado.emprestado.dispensaFotos, estado.emprestado.fotos);
   }
   if (garantia === "garantia" && mom.faturaObrigatoria && !nFatura
       && estado.dispensas.fatura.marcada) {

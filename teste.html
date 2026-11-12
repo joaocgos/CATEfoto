@@ -139,6 +139,24 @@ async function novo() {
 }
 const nomes = (p) => (p ? p.files.map((f) => f.name) : []);
 const marcaCaixa = (raiz) => raiz.querySelector(".dispensa input[type=checkbox]");
+// Marca a omissão em todas as subsecções visíveis cujo título começa por
+// `prefixo`, com o motivo (e o detalhe, para «Outro»).
+function omitir(prefixo, motivo = "", detalhe = "") {
+  [...d.querySelectorAll(".sub")]
+    .filter((s) => !s.closest("[hidden]") && s.querySelector("h3").textContent.startsWith(prefixo))
+    .forEach((s) => {
+      const c = marcaCaixa(s);
+      if (!c.checked) c.click();
+      const sel = s.querySelector("select.dispensa-motivo");
+      sel.value = motivo;
+      sel.dispatchEvent(new w.Event("change", { bubbles: true }));
+      if (detalhe) (() => {
+        const i = s.querySelector("input.dispensa-motivo");
+        i.value = detalhe;
+        i.dispatchEvent(new w.Event("input", { bubbles: true }));
+      })();
+    });
+}
 
 /* ── Os testes ──────────────────────────────────────────────────────────── */
 async function correr() {
@@ -159,12 +177,14 @@ async function correr() {
   ok("A lista diz o que falta", el("em-falta").textContent.includes("fotografias do equipamento"), el("em-falta").textContent);
   ok("Sem fotografia não se pode partilhar", el("send").disabled);
   await juntar("Fotografias");
+  ok("Sem etiqueta não parte", !(await partilhar()));
+  omitir("Etiquetas", "Etiqueta ilegível");
   let p = await partilhar();
   ok("Partilhou", !!p);
   ok("Assunto: número · momento · tipo", p && p.title === "000123 · RECOLHA · DOMESTICO", p && p.title);
   ok("O corpo começa pelo cabeçalho", p && p.text.startsWith("Registo fotográfico — CATEfoto"));
   ok("Corpo: «Serviço interno», sem externo quando fica vazio", p && p.text.includes("Serviço interno: 000123") && !p.text.includes("Serviço externo"));
-  ok("Corpo: sem «já enviadas»", p && !p.text.includes("já enviadas") && p.text.includes("Etiquetas: nenhuma neste registo."));
+  ok("Corpo: sem «já enviadas»", p && !p.text.includes("já enviadas") && p.text.includes("Etiqueta do equipamento — Etiqueta ilegível"), p && p.text);
   ok("Nome do ficheiro", nomes(p).join() === "000123_recolha_dom_fg_01.jpg", nomes(p));
   ok("O ecrã final dá o recibo", el("done-resumo").textContent === "000123 · RECOLHA · DOMESTICO · 1 fotografia", el("done-resumo").textContent);
   await novo();
@@ -188,7 +208,7 @@ async function correr() {
   ok("O número de cima passa a «interno»", el("num-lbl").textContent.includes("interno"), el("num-lbl").textContent);
   escrever("num-externo", "ab 12-34/");
   ok("O externo segue a mesma regra: letras, algarismos e traços", el("num-externo").value === "AB12-34", el("num-externo").value);
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   p = await partilhar();
   ok("Sem fatura nem omissão, não parte", !p);
   marcaCaixa(el("fatura")).click();
@@ -201,7 +221,7 @@ async function correr() {
   classificar("Doméstico", "Entrega", "Fora de Garantia");
   ok("Fora de garantia o campo também aparece", !el("campo-num-externo").hidden);
   escrever("num", "000129"); escrever("tec", "Teste"); escrever("num-externo", "XY9");
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   p = await partilhar();
   ok("Fora de garantia o externo segue, com a garantia por baixo", p && p.text.includes("Serviço interno: 000129\nServiço externo: XY9\nGarantia: Fora de garantia"), p && p.text.slice(0, 160));
   await novo();
@@ -219,7 +239,7 @@ async function correr() {
   titulo("Omitir o número (Recolha)");
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   escrever("tec", "Teste");
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   marcaCaixa(el("dispensa-numero")).click();
   ok("O número fica vazio e bloqueado", el("num").disabled && el("num").value === "");
   p = await partilhar();
@@ -238,9 +258,26 @@ async function correr() {
   p = await partilhar();
   ok("Sem etiqueta não parte", !p);
   marcaCaixa(bloco("Etiquetas")).click();
+  ok("Só a caixa, sem motivo, não parte", !(await partilhar()));
+  omitir("Etiquetas", "Sem acesso à etiqueta");
   p = await partilhar();
-  ok("Com a etiqueta omitida parte", !!p);
-  ok("Corpo lista a etiqueta omitida", p && p.text.includes("Etiqueta do equipamento"));
+  ok("Com a etiqueta omitida e o motivo parte", !!p);
+  ok("Corpo lista a etiqueta omitida com o motivo", p && p.text.includes("Etiqueta do equipamento — Sem acesso à etiqueta"), p && p.text);
+  await novo();
+
+  titulo("Omitir as fotografias do equipamento");
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  escrever("num", "000130"); escrever("tec", "Teste");
+  await juntar("Etiquetas");
+  E("actualizarBotaoEnviar()");
+  ok("A lista diz que faltam as fotografias do equipamento", el("em-falta").textContent.includes("fotografias do equipamento"), el("em-falta").textContent);
+  ok("Só com a etiqueta não parte", !(await partilhar()));
+  omitir("Fotografias ·", "Outro");
+  ok("«Outro» sem detalhe não parte", !(await partilhar()));
+  omitir("Fotografias ·", "Outro", "máquina embalada");
+  p = await partilhar();
+  ok("Com o detalhe parte", !!p);
+  ok("Corpo: fotografias omitidas com o detalhe", p && p.text.includes('Fotografias do equipamento — Outro — "máquina embalada"'), p && p.text);
   await novo();
 
   titulo("Vários equipamentos");
@@ -248,6 +285,7 @@ async function correr() {
   escrever("num", "000126"); escrever("tec", "Teste");
   el("eq-mais").click();
   await esperar(150);
+  omitir("Etiquetas", "Sem etiqueta");
   await juntar("Fotografias");
   ok("Com um equipamento sem fotografias não parte", !(await partilhar()));
   const segundo = [...d.querySelectorAll(".pickers")].map((x) => x.parentElement).filter((s) => s.textContent.trim().startsWith("Fotografias"))[1];
@@ -278,7 +316,7 @@ async function correr() {
   titulo("O que fica escondido não é enviado");
   classificar("Doméstico", "Entrega", "Em Garantia");
   escrever("num", "000127"); escrever("tec", "Teste");
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   await juntar("Fatura");
   botao("garantias", "Fora de Garantia").click();
   p = await partilhar();
@@ -288,7 +326,7 @@ async function correr() {
   titulo("Descrição por fotografia");
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   escrever("num", "000128"); escrever("tec", "Teste");
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   ok("Por omissão não há campos", d.querySelectorAll(".nota-campo").length === 0);
   el("notas-fotos").click();
   await esperar(250);
@@ -310,7 +348,7 @@ async function correr() {
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   escrever("num", "000140"); escrever("tec", "Teste");
   ok("A Recolha pergunta pelo emprestado", !!el("emp-marca") && !el("emp-marca").checked);
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   el("emp-marca").click();
   await esperar(100);
   ok("Com «sim» aparecem a etiqueta e as fotografias", !!bloco("Etiqueta do emprestado") && !!bloco("Fotografias do emprestado"));
@@ -337,7 +375,7 @@ async function correr() {
   botao("momentos", "Reparação").click();
   escrever("num", "000150"); escrever("tec", "Teste");
   ok("A Reparação pede estado", !el("card-estado").hidden);
-  await juntar("Fotografias");
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   p = await partilhar();
   ok("Sem estado, não parte", !p && el("est-err").classList.contains("show"));
   botao("estados", "Não resolvido").click();
@@ -387,7 +425,7 @@ async function correr() {
   ok("Aparecem a loja e o código, sem os endereços para copiar", !el("envio-direto").hidden && el("lojas").hidden);
   classificar("Doméstico", "Recolha", "Fora de Garantia");
   escrever("num", "000160"); escrever("tec", "Teste");
-  await juntar("Fotografias", 2);
+  omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias", 2);
   el("send").click(); await esperar(300);
   ok("Sem loja nem código, não envia", pedidos.length === 0 && el("loja-err").classList.contains("show") && el("codigo-err").classList.contains("show"));
   botao("lojas-escolha", "Porto").click();
