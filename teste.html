@@ -213,8 +213,13 @@ async function correr() {
   p = await partilhar();
   ok("Sem fatura nem omissão, não parte", !p);
   marcaCaixa(el("fatura")).click();
+  ok("Só a caixa da fatura, sem motivo, não parte", !(await partilhar()));
+  const selFat = el("fatura").querySelector("select.dispensa-motivo");
+  selFat.value = "Cliente vai enviar depois"; selFat.dispatchEvent(new w.Event("change", { bubbles: true }));
   p = await partilhar();
-  ok("Com a omissão da fatura, parte", !!p);
+  ok("Com a omissão da fatura e o motivo, parte", !!p);
+  ok("Corpo: fatura omitida com o motivo", p && p.text.includes("Fatura — Cliente vai enviar depois"), p && p.text);
+  ok("Todas as caixas de omissão dizem o mesmo", [...d.querySelectorAll(".dispensa-marca span")].filter((x) => !x.closest(".emp-pergunta") && !x.closest("[hidden]")).every((x) => x.textContent === "Omitir (fica registado)"));
   ok("Corpo: interno, externo e a garantia logo por baixo", p && p.text.includes("Serviço interno: 000124\nServiço externo: AB12-34\nGarantia: Em garantia"), p && p.text.slice(0, 200));
   ok("O assunto não leva o serviço externo", p && p.title === "000124 · RECOLHA · DOMESTICO", p && p.title);
   ok("Os ficheiros levam o número interno", nomes(p).every((n) => n.startsWith("000124_")), nomes(p));
@@ -477,7 +482,7 @@ async function correr() {
      && dc.get("cliente_assunto") === "CATE · Recolha · 000161", dc.get("cliente_assunto"));
   const cc = dc.get("cliente_corpo") || "";
   ok("O corpo do cliente leva só o necessário", cc.includes("Serviço: 000161") && cc.includes("Momento: Recolha")
-     && !cc.includes("Registado por") && !cc.includes("Garantia") && !cc.includes("Omitido"), cc);
+     && cc.includes("Registado por: Teste") && !cc.includes("Garantia") && !cc.includes("Omitido"), cc);
   ok("O cliente leva as fotografias e a etiqueta do equipamento",
      dc.getAll("cliente_fotos[]").length === 3 && dc.getAll("cliente_fotos[]").some((n) => n.includes("etiqueta_")), dc.getAll("cliente_fotos[]"));
   ok("O ecrã final diz para onde seguiu a cópia", el("done-msg").textContent.includes("cliente@exemplo.pt"), el("done-msg").textContent);

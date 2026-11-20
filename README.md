@@ -182,7 +182,7 @@ compra — é o que prova que o equipamento está coberto. Cabem três
 fotografias. Se o cliente tiver a fatura no telemóvel, fotografa-se o ecrã. Os
 ficheiros saem como `000123_recolha_dom_gar_fatura_01.jpg`.
 
-No primeiro contacto é obrigatória com dispensa ("O cliente não tem a fatura");
+No primeiro contacto é obrigatória, com omissão por motivo de lista;
 na Entrega é opcional (ver `faturaObrigatoria`).
 
 ### Serviço externo
@@ -215,8 +215,9 @@ diz só «Serviço: …» e um externo escrito antes de mudar de momento não se
 Três coisas podem ser obrigatórias e, ainda assim, faltar por boas razões: o
 **número do serviço** (ainda não aberto), a **etiqueta** de um equipamento
 (etiqueta ilegível ou inexistente) e a **fatura** (o cliente não a tem). Para
-essas há uma caixa — *"… — omitir (fica registado)"* — que deixa partilhar sem
-elas. Ao marcar, aparece um campo opcional para o motivo.
+essas há uma caixa igual em todo o lado — *«Omitir (fica registado)»* — que
+deixa partilhar sem elas. Ao marcar, escolhe-se o motivo numa lista
+(obrigatório); «Outro» abre um campo livre, também obrigatório.
 
 A omissão fica escrita no email, para quem arquiva distinguir uma decisão de
 um esquecimento:

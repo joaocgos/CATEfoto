@@ -775,7 +775,7 @@
 
     <!-- Fatura de compra: só nos registos em garantia ----------------------->
     <div id="fatura"></div>
-    <p class="err" role="alert" id="fat-err">Junta a fatura, ou marca que o cliente não a tem.</p>
+    <p class="err" role="alert" id="fat-err">Junta a fatura, ou marca a omissão e escolhe o motivo.</p>
 
     <!-- Fotografias do local: nos momentos sem equipamentos ------------------>
     <div id="local"></div>
@@ -846,7 +846,7 @@
                autocapitalize="off" spellcheck="false" maxlength="120"
                placeholder="Ex.: nome@exemplo.pt" aria-describedby="copia-err copia-hint">
         <p class="err" role="alert" id="copia-err">Escreve o email do cliente (ex.: nome@exemplo.pt).</p>
-        <p class="card-hint" id="copia-hint">Leva o número do serviço, o momento, a data, o estado
+        <p class="card-hint" id="copia-hint">Leva o número do serviço, o momento, a data, quem registou, o estado
           e as fotografias do equipamento, das etiquetas e da folha de serviço.</p>
       </div>
     </section>
@@ -1189,6 +1189,8 @@ const MOTIVOS_OMITIR_FOTOS = ["Sem acesso ao equipamento", "Cliente não autoriz
                               "Equipamento não estava no local", "Outro"];
 const MOTIVOS_OMITIR_NUMERO = ["Serviço ainda não aberto", "Sem acesso ao sistema",
                                "Pedido direto do cliente", "Outro"];
+const MOTIVOS_OMITIR_FATURA = ["A fatura não é necessária", "Cliente não tem a fatura",
+                               "Cliente vai enviar depois", "Fatura não estava no local", "Outro"];
 const novaOmissao = () => ({ marcada: false, motivo: "", detalhe: "" });
 const omissaoValida = (d) => d.marcada && !!d.motivo
   && (d.motivo !== "Outro" || d.detalhe.trim().length >= 3);
@@ -1221,7 +1223,7 @@ const PASSOS = [
 // estava escrito, para o repor se a marca for tirada.
 const novasDispensas = () => ({
   numero: { marcada: false, motivo: "", detalhe: "", anterior: "" },
-  fatura: { marcada: false, motivo: "" },
+  fatura: { marcada: false, motivo: "", detalhe: "" },
 });
 
 // Um equipamento: as suas fotos e a dispensa da sua etiqueta.
@@ -2048,11 +2050,11 @@ function desenharFolha() {
 // A fatura de compra é o que prova que o equipamento está coberto, por isso só
 // aparece nos registos em garantia. Tal como a folha, é do serviço e não de um
 // equipamento.
-// Caixa "omitir — fica registado", ligada a um objecto { marcada, motivo }.
-// Serve para o número, a etiqueta de cada equipamento e a fatura. Os cartões
-// são desenhados de novo a cada mudança, por isso o estado vive no objecto e a
-// caixa só o mostra.
-function caixaDispensa(dispensa, texto, aoMudar, motivos = null) {
+// Caixa «Omitir (fica registado)», igual em todo o lado, ligada a um objecto
+// { marcada, motivo, detalhe }. Ao marcar aparece a lista de motivos; «Outro»
+// abre um campo livre, obrigatório. Os cartões são desenhados de novo a cada
+// mudança, por isso o estado vive no objecto e a caixa só o mostra.
+function caixaDispensa(dispensa, aoMudar, motivos) {
   const caixa = document.createElement("div");
   caixa.className = "dispensa";
 
@@ -2062,46 +2064,35 @@ function caixaDispensa(dispensa, texto, aoMudar, motivos = null) {
   marca.type = "checkbox";
   marca.checked = dispensa.marcada;
   const frase = document.createElement("span");
-  frase.textContent = texto;
+  frase.textContent = "Omitir (fica registado)";
   rotulo.append(marca, frase);
 
-  // Com `motivos`: lista obrigatória e, em «Outro», um detalhe obrigatório.
-  // Sem lista: motivo livre e opcional (número, fatura).
-  let motivo, detalhe = null;
-  if (motivos) {
-    motivo = document.createElement("select");
-    motivo.className = "dispensa-motivo";
-    motivo.setAttribute("aria-label", "Motivo da omissão");
-    const vazio = document.createElement("option");
-    vazio.value = ""; vazio.textContent = "Escolhe o motivo";
-    motivo.appendChild(vazio);
-    motivos.forEach((m) => {
-      const o = document.createElement("option");
-      o.value = o.textContent = m;
-      motivo.appendChild(o);
-    });
-    detalhe = document.createElement("input");
-    detalhe.type = "text";
-    detalhe.className = "dispensa-motivo";
-    detalhe.placeholder = "Qual o motivo?";
-    detalhe.maxLength = 120;
-    detalhe.value = dispensa.detalhe || "";
-    detalhe.hidden = !dispensa.marcada || dispensa.motivo !== "Outro";
-    detalhe.addEventListener("input", () => { dispensa.detalhe = detalhe.value; });
-    motivo.addEventListener("change", () => {
-      dispensa.motivo = motivo.value;
-      detalhe.hidden = motivo.value !== "Outro";
-      if (motivo.value) marcar(null, "num-om-err", false);
-      if (motivo.value === "Outro") detalhe.focus();
-    });
-  } else {
-    motivo = document.createElement("input");
-    motivo.type = "text";
-    motivo.className = "dispensa-motivo";
-    motivo.placeholder = "Motivo (opcional)";
-    motivo.maxLength = 120;
-    motivo.addEventListener("input", () => { dispensa.motivo = motivo.value.trim(); });
-  }
+  // Lista obrigatória e, em «Outro», um detalhe obrigatório.
+  const motivo = document.createElement("select");
+  motivo.className = "dispensa-motivo";
+  motivo.setAttribute("aria-label", "Motivo da omissão");
+  const vazio = document.createElement("option");
+  vazio.value = ""; vazio.textContent = "Escolhe o motivo";
+  motivo.appendChild(vazio);
+  motivos.forEach((m) => {
+    const o = document.createElement("option");
+    o.value = o.textContent = m;
+    motivo.appendChild(o);
+  });
+  const detalhe = document.createElement("input");
+  detalhe.type = "text";
+  detalhe.className = "dispensa-motivo";
+  detalhe.placeholder = "Qual o motivo?";
+  detalhe.maxLength = 120;
+  detalhe.value = dispensa.detalhe || "";
+  detalhe.hidden = !dispensa.marcada || dispensa.motivo !== "Outro";
+  detalhe.addEventListener("input", () => { dispensa.detalhe = detalhe.value; });
+  motivo.addEventListener("change", () => {
+    dispensa.motivo = motivo.value;
+    detalhe.hidden = motivo.value !== "Outro";
+    if (motivo.value) { marcar(null, "num-om-err", false); marcar(null, "fat-err", false); }
+    if (motivo.value === "Outro") detalhe.focus();
+  });
   motivo.value = dispensa.motivo;
   motivo.hidden = !dispensa.marcada;
 
@@ -2110,15 +2101,14 @@ function caixaDispensa(dispensa, texto, aoMudar, motivos = null) {
     motivo.hidden = !marca.checked;
     if (!marca.checked) {
       dispensa.motivo = ""; motivo.value = "";
-      if (detalhe) { dispensa.detalhe = ""; detalhe.value = ""; detalhe.hidden = true; }
+      dispensa.detalhe = ""; detalhe.value = ""; detalhe.hidden = true;
     }
     marcar(null, "fot-err", false);
     marcar(null, "fat-err", false);
     marcar(null, "num-om-err", false);
     if (aoMudar) aoMudar();
   });
-  caixa.append(rotulo, motivo);
-  if (detalhe) caixa.append(detalhe);
+  caixa.append(rotulo, motivo, detalhe);
   return caixa;
 }
 
@@ -2139,7 +2129,7 @@ function desenharDispensaNumero() {
   $("num").disabled = aplica && d.marcada;
   if (!aplica) return;
 
-  caixa.appendChild(caixaDispensa(d, "Não tenho o número — omitir (fica registado)", () => {
+  caixa.appendChild(caixaDispensa(d, () => {
     const num = $("num");
     if (d.marcada) { d.anterior = num.value; num.value = ""; }
     else { num.value = d.anterior || ""; d.anterior = ""; }
@@ -2203,8 +2193,7 @@ function desenharFatura() {
 
   cartao.append(cab, dica, pickers, thumbs);
   if (faturaObrigatoria()) {
-    cartao.appendChild(caixaDispensa(estado.dispensas.fatura,
-      "O cliente não tem a fatura — omitir (fica registado)"));
+    cartao.appendChild(caixaDispensa(estado.dispensas.fatura, null, MOTIVOS_OMITIR_FATURA));
   }
   caixa.appendChild(cartao);
 }
@@ -2298,14 +2287,12 @@ function desenharEmprestado() {
     const subEtq = construirSubseccao("emp", "etiquetas", "Etiqueta do emprestado · obrigatória",
       "A etiqueta com a marca, o modelo e o número de série. Se não der, marca a " +
       "omissão por baixo e escolhe o motivo.", "in-etq-cam", "in-etq-gal");
-    subEtq.appendChild(caixaDispensa(emp.dispensaEtiqueta,
-      "Não dá para fotografar a etiqueta — omitir (fica registado)", null, MOTIVOS_OMITIR_ETIQUETA));
+    subEtq.appendChild(caixaDispensa(emp.dispensaEtiqueta, null, MOTIVOS_OMITIR_ETIQUETA));
     cartao.appendChild(subEtq);
     const subFot = construirSubseccao("emp", "fotos", "Fotografias do emprestado · obrigatória",
       "O estado em que o equipamento emprestado fica. Riscos e amolgadelas de perto.",
       "in-fot-cam", "in-fot-gal");
-    subFot.appendChild(caixaDispensa(emp.dispensaFotos,
-      "Não dá para fotografar o equipamento — omitir (fica registado)", null, MOTIVOS_OMITIR_FOTOS));
+    subFot.appendChild(caixaDispensa(emp.dispensaFotos, null, MOTIVOS_OMITIR_FOTOS));
     cartao.appendChild(subFot);
   }
   caixa.appendChild(cartao);
@@ -2420,9 +2407,7 @@ function desenharEquipamentos() {
     // omite-se com um motivo, e fica escrito.
     if (obrigatoria) {
       subEtiquetas.appendChild(caixaDispensa(
-        estado.equipamentos[eq].dispensaEtiqueta,
-        "Não dá para fotografar a etiqueta — omitir (fica registado)",
-        null, MOTIVOS_OMITIR_ETIQUETA));
+        estado.equipamentos[eq].dispensaEtiqueta, null, MOTIVOS_OMITIR_ETIQUETA));
     }
     cartao.appendChild(subEtiquetas);
 
@@ -2436,9 +2421,7 @@ function desenharEquipamentos() {
                       "um — é a de perto que prova o dano.",
       "in-fot-cam", "in-fot-gal");
     subFotos.appendChild(caixaDispensa(
-      estado.equipamentos[eq].dispensaFotos,
-      "Não dá para fotografar o equipamento — omitir (fica registado)",
-      null, MOTIVOS_OMITIR_FOTOS));
+      estado.equipamentos[eq].dispensaFotos, null, MOTIVOS_OMITIR_FOTOS));
     cartao.appendChild(subFotos);
 
     caixa.appendChild(cartao);
@@ -2758,7 +2741,7 @@ function validar(mostrar = true) {
   // A fatura, onde é obrigatória, só pode faltar com a dispensa marcada.
   const fatMal = faturaObrigatoria()
     && !estado.fatura.some((f) => f.estado === "pronta")
-    && !estado.dispensas.fatura.marcada;
+    && !omissaoValida(estado.dispensas.fatura);
   const cliMal = clienteObrigatorio() && $("cliente").value.trim().length < 2;
   const morMal = moradaPedida() && $("morada").value.trim().length < 3;
   const preMal = marcaMomento("campoPretendido") && $("pretendido").value.trim().length < 3;
@@ -2980,7 +2963,6 @@ function construirCorpo(num, momento, servico, garantia = null) {
   // existe, para quem arquiva distinguir uma decisão de um esquecimento. Só
   // contam onde a dispensa existe neste momento.
   const omitidos = [];
-  const comMotivo = (texto, d) => (d.motivo ? `${texto} — "${d.motivo}"` : texto);
   const variosEq = estado.equipamentos.length > 1;
   if (mom.numeroDispensavel && !num && estado.dispensas.numero.marcada) {
     omitidos.push(`Número do serviço — ${textoOmissao(estado.dispensas.numero)}`);
@@ -3000,8 +2982,8 @@ function construirCorpo(num, momento, servico, garantia = null) {
     omissao("Fotografias do emprestado", estado.emprestado.dispensaFotos, estado.emprestado.fotos);
   }
   if (garantia === "garantia" && mom.faturaObrigatoria && !nFatura
-      && estado.dispensas.fatura.marcada) {
-    omitidos.push(comMotivo("Fatura", estado.dispensas.fatura));
+      && omissaoValida(estado.dispensas.fatura)) {
+    omitidos.push(`Fatura — ${textoOmissao(estado.dispensas.fatura)}`);
   }
   if (omitidos.length) {
     linhas.push("", "Omitido por decisão de quem regista:",
@@ -3077,6 +3059,7 @@ function corpoDoCliente(nFotos) {
     ...(num ? [`Serviço: ${num}`] : []),
     `Momento: ${MOMENTO_POR_CHAVE[estado.momento].texto}`,
     `Data: ${dataHora(new Date())}`,
+    `Registado por: ${$("tec").value.trim()}`,
     ...(pedeEstado() && estado.estadoServico
       ? [`Estado: ${ESTADO_POR_CHAVE[estado.estadoServico].texto}`] : []),
     ...(nFotos ? [`Fotografias: ${nFotos} (em anexo)`] : []),
