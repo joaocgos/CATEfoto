@@ -80,37 +80,62 @@ for ($i = 0; $i < $n; $i++) {
     $anexos[] = [$nome, $dados];
 }
 
-// ── Mensagem MIME ──
-$fronteira = 'catefoto_' . bin2hex(random_bytes(12));
-$cab = [
-    'From: ' . $cfg['remetente_nome'] . ' <' . $cfg['remetente'] . '>',
-    'MIME-Version: 1.0',
-    'Content-Type: multipart/mixed; boundary="' . $fronteira . '"',
-    'X-Mailer: CATEfoto',
-];
-$msg = "--$fronteira\r\n"
-     . "Content-Type: text/plain; charset=UTF-8\r\n"
-     . "Content-Transfer-Encoding: base64\r\n\r\n"
-     . chunk_split(base64_encode($corpo)) . "\r\n";
-foreach ($anexos as [$nome, $dados]) {
-    $msg .= "--$fronteira\r\n"
-          . "Content-Type: image/jpeg; name=\"$nome\"\r\n"
-          . "Content-Disposition: attachment; filename=\"$nome\"\r\n"
-          . "Content-Transfer-Encoding: base64\r\n\r\n"
-          . chunk_split(base64_encode($dados)) . "\r\n";
+// ── Cópia ao cliente (opcional): endereço validado, só ficheiros já recebidos ──
+$clienteEmail = trim((string)($_POST['cliente_email'] ?? ''));
+$copia = null;
+if ($clienteEmail !== '') {
+    if (strlen($clienteEmail) > 120 || preg_match('/[\r\n,;]/', $clienteEmail)
+        || !filter_var($clienteEmail, FILTER_VALIDATE_EMAIL)) responder(400, 'cliente');
+    $cAssunto = trim(str_replace(["\r", "\n"], ' ', (string)($_POST['cliente_assunto'] ?? '')));
+    $cCorpo = (string)($_POST['cliente_corpo'] ?? '');
+    if ($cAssunto === '' || mb_strlen($cAssunto) > 200 || mb_strlen($cCorpo) > 5000) responder(400, 'texto');
+    $nomes = array_map('strval', (array)($_POST['cliente_fotos'] ?? []));
+    $copia = [$clienteEmail, $cAssunto, $cCorpo,
+              array_values(array_filter($anexos, fn($a) => in_array($a[0], $nomes, true)))];
 }
-$msg .= "--$fronteira--\r\n";
 
-$enviado = mail(
-    $para,
-    '=?UTF-8?B?' . base64_encode($assunto) . '?=',
-    $msg,
-    implode("\r\n", $cab),
-    '-f' . $cfg['remetente']
-);
+// ── Mensagem MIME ──
+function enviarEmail(array $cfg, string $para, string $assunto, string $corpo, array $anexos): bool {
+    $fronteira = 'catefoto_' . bin2hex(random_bytes(12));
+    $cab = [
+        'From: ' . $cfg['remetente_nome'] . ' <' . $cfg['remetente'] . '>',
+        'MIME-Version: 1.0',
+        'Content-Type: multipart/mixed; boundary="' . $fronteira . '"',
+        'X-Mailer: CATEfoto',
+    ];
+    $msg = "--$fronteira\r\n"
+         . "Content-Type: text/plain; charset=UTF-8\r\n"
+         . "Content-Transfer-Encoding: base64\r\n\r\n"
+         . chunk_split(base64_encode($corpo)) . "\r\n";
+    foreach ($anexos as [$nome, $dados]) {
+        $msg .= "--$fronteira\r\n"
+              . "Content-Type: image/jpeg; name=\"$nome\"\r\n"
+              . "Content-Disposition: attachment; filename=\"$nome\"\r\n"
+              . "Content-Transfer-Encoding: base64\r\n\r\n"
+              . chunk_split(base64_encode($dados)) . "\r\n";
+    }
+    $msg .= "--$fronteira--\r\n";
+    return mail(
+        $para,
+        '=?UTF-8?B?' . base64_encode($assunto) . '?=',
+        $msg,
+        implode("\r\n", $cab),
+        '-f' . $cfg['remetente']
+    );
+}
+
+$enviado = enviarEmail($cfg, $para, $assunto, $corpo, $anexos);
 
 $recentes[] = $agora;
 @file_put_contents($marca, json_encode(array_values($recentes)), LOCK_EX);
 
 if (!$enviado) responder(502, 'mail');
+// A cópia só sai depois do email da loja; se falhar, o registo já seguiu e a
+// app avisa o técnico (cliente: false), sem pedir para reenviar tudo.
+if ($copia) {
+    $okCliente = enviarEmail($cfg, ...$copia);
+    http_response_code(200);
+    echo json_encode(['ok' => true, 'cliente' => $okCliente]);
+    exit;
+}
 responder(200);

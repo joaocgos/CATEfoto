@@ -171,7 +171,7 @@
     display: block; font-size: 13px; font-weight: 600;
     color: var(--ink-2); margin-bottom: 7px;
   }
-  input[type="text"], textarea, select {
+  input[type="text"], input[type="email"], textarea, select {
     width: 100%;
     background: var(--bg);
     border: 1.5px solid var(--line);
@@ -181,7 +181,7 @@
     padding: 14px 15px;
     transition: border-color .15s, background .15s;
   }
-  input[type="text"], select { height: 54px; }
+  input[type="text"], input[type="email"], select { height: 54px; }
   textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
   input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
   input:focus, textarea:focus, select:focus {
@@ -331,6 +331,8 @@
      (dense: as miniaturas seguintes não deixam buracos na linha de cima). */
   .thumbs.grid { grid-auto-flow: row dense; }
   .emp-pergunta { margin: 0; }
+  #campo-copia { margin: 16px 0 0; }
+  #campo-copia .card-hint { margin: 8px 0 0; }
   .cel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .nota-btn {
     border: 0; background: none; padding: 6px 2px; min-height: 40px;
@@ -832,6 +834,23 @@
                 placeholder="Ex.: risco na porta já existente antes da recolha."></textarea>
     </section>
 
+    <!-- Cópia ao cliente: só com envio direto e nos momentos com copiaCliente.
+         O cliente recebe um email à parte, só com o que lhe diz respeito. -->
+    <section class="card" id="card-copia" hidden>
+      <label class="dispensa-marca emp-pergunta">
+        <input type="checkbox" id="copia-marca"><span>Enviar cópia ao cliente</span>
+      </label>
+      <div class="field" id="campo-copia" hidden>
+        <label class="lbl" for="copia-email">Email do cliente</label>
+        <input id="copia-email" type="email" inputmode="email" autocomplete="off"
+               autocapitalize="off" spellcheck="false" maxlength="120"
+               placeholder="Ex.: nome@exemplo.pt" aria-describedby="copia-err copia-hint">
+        <p class="err" role="alert" id="copia-err">Escreve o email do cliente (ex.: nome@exemplo.pt).</p>
+        <p class="card-hint" id="copia-hint">Leva o número do serviço, o momento, a data, o estado
+          e as fotografias do equipamento, das etiquetas e da folha de serviço.</p>
+      </div>
+    </section>
+
     <!-- Caixas das lojas: no fim, que é quando se vai partilhar (CONFIG.LOJAS) -->
     <section class="card" id="card-lojas" hidden>
       <div class="card-head"><h2>Enviar para</h2></div>
@@ -1038,6 +1057,7 @@ const MOMENTOS = [
     faturaObrigatoria: true,
     // Quando se leva o equipamento, pode ficar outro emprestado no lugar dele.
     emprestimo: "Ficou algum equipamento emprestado?",
+    copiaCliente: true,
     icone: '<path d="M2.5 6.5h11v10h-11z"/><path d="M13.5 9.5h4l3.5 3.5v3.5h-7.5"/><circle cx="7" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/>' },
 
   { chave: "reparacao_local", nome: "Reparação", detalhe: "resolvida no local",
@@ -1048,6 +1068,7 @@ const MOMENTOS = [
     faturaObrigatoria: true,
     // Na reparação no local é que se sabe se o problema ficou resolvido.
     estadoServico: true,
+    copiaCliente: true,
     icone: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>' },
 
   // Cobre as duas formas de o equipamento dar entrada: trazido pelo técnico
@@ -1068,6 +1089,7 @@ const MOMENTOS = [
     campoRecebidoPor: true,
     // Fecha o ciclo da recolha: o emprestado volta, e regista-se como voltou.
     emprestimo: "Foi devolvido algum equipamento emprestado?",
+    copiaCliente: true,
     icone: '<path d="M21 8v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><rect x="2.5" y="3.5" width="19" height="4.5" rx="1"/><path d="M10 12.5h4"/>' },
 
   { chave: "montagem", nome: "Montagem", detalhe: "instalação de equipamento novo",
@@ -1081,6 +1103,7 @@ const MOMENTOS = [
     ajudaFotos: "O equipamento instalado e as ligações feitas.",
     campoRecebidoPor: true,
     estadoServico: true,
+    copiaCliente: true,
     icone: '<path d="M12 2.5 4 7v10l8 4.5 8-4.5V7z"/><path d="m4 7 8 4.5L20 7"/><path d="M12 11.5v10"/>' },
 
   // O Orçamento é o único momento que não é sobre um equipamento: é um
@@ -2687,7 +2710,19 @@ function actualizarVisibilidade() {
   // O formulário abre quando todos os passos que se aplicam têm resposta.
   // Reabrir um passo já respondido não o esconde: as fotos ficam onde estavam.
   $("resto").hidden = !!porResponder;
+  actualizarCopia();
 }
+
+// A cópia ao cliente só existe com envio direto (a partilha monta um só email)
+// e nos momentos com `copiaCliente`. Função (e não const): desenharLojas()
+// chama-a antes de chegar aqui.
+function copiaDisponivel() { return envioDireto() && marcaMomento("copiaCliente"); }
+function copiaPedida() { return copiaDisponivel() && $("copia-marca").checked; }
+function actualizarCopia() {
+  $("card-copia").hidden = !copiaDisponivel();
+  $("campo-copia").hidden = !copiaPedida();
+}
+const emailValido = (t) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t);
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Avisos
@@ -2739,6 +2774,7 @@ function validar(mostrar = true) {
   const empEtqMal = emprestimoAtivo() && !etiquetaEmOrdem(estado.emprestado);
   const empFotMal = emprestimoAtivo() && !fotosEmOrdem(estado.emprestado);
   const empMal = empEtqMal || empFotMal;
+  const copMal = copiaPedida() && !emailValido($("copia-email").value.trim());
 
   // Cada equipamento precisa da etiqueta e das fotografias, ou da omissão com
   // motivo. Diz-se qual, em vez de deixar passar.
@@ -2763,6 +2799,7 @@ function validar(mostrar = true) {
       [faltaEq, varios ? `fotografias do equipamento ${vazio + 1}` : "fotografias do equipamento"],
       [fotMal && semEq, "fotografias do local"],
       [fotMal && !semEq && !faltaEtq && !faltaEq, "pelo menos uma fotografia"],
+      [copMal, "email do cliente"],
     ].filter(([mal]) => mal).map(([, nome]) => nome);
   }
   $("num-err").textContent = marcaMomento("numeroDispensavel")
@@ -2782,6 +2819,7 @@ function validar(mostrar = true) {
   marcar("motivo", "motivo-err", motMal);
   marcar("motivo-detalhe", "detalhe-err", detMal);
   marcar(null, "emp-err", empMal);
+  marcar("copia-email", "copia-err", copMal);
   const erroFotos = $("fot-err");
   const varios = estado.equipamentos.length > 1;
   if (faltaEtq) {
@@ -2801,10 +2839,10 @@ function validar(mostrar = true) {
                  : numMal ? "num" : numOmMal ? "dispensa-numero" : cliMal ? "cliente" : morMal ? "morada"
                  : tecMal ? "tec" : estMal ? "card-estado" : motMal ? "motivo"
                  : detMal ? "motivo-detalhe" : preMal ? "pretendido" : fatMal ? "fatura"
-                 : empMal ? "emprestado" : null;
+                 : empMal ? "emprestado" : copMal ? "copia-email" : null;
   if (primeiro) {
     levarA($(primeiro), "center");
-    if (["num", "cliente", "morada", "tec", "pretendido", "motivo", "motivo-detalhe"].includes(primeiro)) {
+    if (["num", "cliente", "morada", "tec", "pretendido", "motivo", "motivo-detalhe", "copia-email"].includes(primeiro)) {
       $(primeiro).focus({ preventScroll: true });
     }
   }
@@ -2813,7 +2851,7 @@ function validar(mostrar = true) {
     levarA($("equipamentos").children[culpado], "center");
   }
   return !(numMal || numOmMal || cliMal || morMal || preMal || tecMal || momMal || srvMal || garMal
-           || fotMal || faltaEq || faltaEtq || fatMal || estMal || motMal || detMal || empMal);
+           || fotMal || faltaEq || faltaEtq || fatMal || estMal || motMal || detMal || empMal || copMal);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2848,9 +2886,13 @@ function construirFicheiros(num, momento, servico, garantia = null) {
   // também o que o corpo do email usa: uma só regra para os dois.
   partesDoRegisto().forEach(({ itens, rotulo, eq }) => {
     const prefixoEq = eq !== null && varios ? `eq${eq + 1}_` : "";
+    // Para o cliente: as do equipamento (fotografias e etiquetas) e a folha.
+    const paraCliente = eq !== null || rotulo === "folha_";
     itens.filter((f) => f.estado === "pronta").forEach((f, i) => {
-      ficheiros.push(new File([f.blob], `${base}${prefixoEq}${rotulo}${doisDig(i + 1)}.jpg`,
-                              { type: "image/jpeg" }));
+      const fich = new File([f.blob], `${base}${prefixoEq}${rotulo}${doisDig(i + 1)}.jpg`,
+                            { type: "image/jpeg" });
+      fich.paraCliente = paraCliente;
+      ficheiros.push(fich);
     });
   });
   return ficheiros;
@@ -3019,6 +3061,31 @@ function assuntoDoRegisto() {
   return quem ? `${quem} · ${mom.marca} · ${srv.marca}${pendente}` : "";
 }
 
+// O email da cópia ao cliente: só o que lhe diz respeito — nada de omissões,
+// garantia, técnico, observações internas ou motivo do estado.
+function assuntoDoCliente() {
+  const num = $("num").value.trim();
+  return `CATE · ${MOMENTO_POR_CHAVE[estado.momento].nome}${num ? " · " + num : ""}`;
+}
+function corpoDoCliente(nFotos) {
+  const num = $("num").value.trim();
+  return [
+    "Olá,",
+    "",
+    "Segue o registo fotográfico do serviço feito pela CATE.",
+    "",
+    ...(num ? [`Serviço: ${num}`] : []),
+    `Momento: ${MOMENTO_POR_CHAVE[estado.momento].texto}`,
+    `Data: ${dataHora(new Date())}`,
+    ...(pedeEstado() && estado.estadoServico
+      ? [`Estado: ${ESTADO_POR_CHAVE[estado.estadoServico].texto}`] : []),
+    ...(nFotos ? [`Fotografias: ${nFotos} (em anexo)`] : []),
+    "",
+    "Com os melhores cumprimentos,",
+    "CATE",
+  ].join("\n");
+}
+
 // O envio direto está ligado quando há endereço do servidor e lojas.
 // Guardar no telemóvel. Em navegação privada o localStorage atira exceção:
 // perde-se a comodidade, não o funcionamento. Funções (e não const) porque
@@ -3052,8 +3119,18 @@ async function enviar() {
   dados.append("loja", loja.chave);
   dados.append("assunto", assuntoDoRegisto());
   dados.append("corpo", construirCorpo(num, estado.momento, estado.servico, garantia));
-  construirFicheiros(num, estado.momento, estado.servico, garantia)
-    .forEach((f) => dados.append("fotos[]", f, f.name));
+  const ficheiros = construirFicheiros(num, estado.momento, estado.servico, garantia);
+  ficheiros.forEach((f) => dados.append("fotos[]", f, f.name));
+  // A cópia ao cliente vai no mesmo pedido: o servidor reaproveita os ficheiros
+  // que já recebeu, pelos nomes, sem os carregar duas vezes.
+  const copia = copiaPedida() ? $("copia-email").value.trim() : "";
+  if (copia) {
+    const doCliente = ficheiros.filter((f) => f.paraCliente);
+    dados.append("cliente_email", copia);
+    dados.append("cliente_assunto", assuntoDoCliente());
+    dados.append("cliente_corpo", corpoDoCliente(doCliente.length));
+    doCliente.forEach((f) => dados.append("cliente_fotos[]", f.name));
+  }
   const temEtiquetas = estado.equipamentos
     .some((e) => e.etiquetas.some((f) => f.estado === "pronta"));
 
@@ -3075,7 +3152,10 @@ async function enviar() {
 
   if (resposta && resposta.ok) {
     if (num && temEtiquetas) marcarEtiquetaEnviada(num, estado.momento);
-    concluir("Enviado", `O registo seguiu para a caixa da loja ${loja.nome}.`, true);
+    concluir("Enviado", `O registo seguiu para a caixa da loja ${loja.nome}.` +
+      (!copia ? "" : resposta.cliente === false
+        ? " A cópia ao cliente não saiu: envia-a pela loja."
+        : ` A cópia seguiu para ${copia}.`), true);
     return;
   }
   if (resposta && resposta.erro === "codigo") {
@@ -3215,6 +3295,9 @@ function recomeçar() {
   $("num-externo").value = "";
   $("cliente").value = "";
   $("recebido").value = "";
+  $("copia-marca").checked = false;
+  $("copia-email").value = "";
+  marcar("copia-email", "copia-err", false);
   ["num-err", "cliente-err", "morada-err", "pretendido-err", "tec-err",
    "mom-err", "srv-err", "gar-err", "fot-err", "fat-err", "est-err", "motivo-err",
    "detalhe-err", "emp-err"].forEach((id) => marcar(null, id, false));
@@ -3315,6 +3398,7 @@ function desenharLojas() {
 
   const direto = envioDireto();
   $("envio-direto").hidden = !direto;
+  actualizarCopia();
   $("lojas").hidden = direto;
   $("send-txt").textContent = direto ? "Enviar registo" : "Partilhar registo";
   // No envio direto o atalho diz para onde vai, ou pede a loja.
@@ -3369,6 +3453,15 @@ desenharLojas();
 $("codigo-envio").addEventListener("input", (e) => {
   gravarGuardado("catefoto.codigo", e.target.value.trim());
   if (e.target.value.trim()) marcar("codigo-envio", "codigo-err", false);
+});
+
+$("copia-marca").addEventListener("change", (e) => {
+  actualizarCopia();
+  if (e.target.checked) $("copia-email").focus({ preventScroll: true });
+  else marcar("copia-email", "copia-err", false);
+});
+$("copia-email").addEventListener("input", (e) => {
+  if (emailValido(e.target.value.trim())) marcar("copia-email", "copia-err", false);
 });
 
 // A linha do rodapé leva ao cartão das lojas.

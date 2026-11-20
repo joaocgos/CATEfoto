@@ -450,7 +450,39 @@ async function correr() {
   ok("Ecrã final: «Enviado», sem «Partilhar outra vez»", el("done-titulo").textContent === "Enviado" && el("retry").hidden
      && el("done-msg").textContent.includes("Porto"));
   ok("Não houve partilha", !partilha);
+  ok("Sem a cópia marcada, não vai nada para o cliente", !dados.get("cliente_email"));
   await novo();
+
+  titulo("Cópia ao cliente");
+  classificar("Doméstico", "Entrada Oficina", "Fora de Garantia");
+  ok("Na Entrada Oficina não há cópia", el("card-copia").hidden);
+  await novo();
+  classificar("Doméstico", "Recolha", "Fora de Garantia");
+  ok("Na Recolha aparece a cópia, com o email escondido", !el("card-copia").hidden && el("campo-copia").hidden);
+  escrever("num", "000161"); escrever("tec", "Teste");
+  await juntar("Etiquetas"); await juntar("Fotografias", 2);
+  el("copia-marca").click();
+  ok("Marcar mostra o email", !el("campo-copia").hidden);
+  escrever("copia-email", "cliente@exemplo");
+  E("actualizarBotaoEnviar()");
+  ok("Email inválido: a lista diz «email do cliente»", el("em-falta").textContent.includes("email do cliente"), el("em-falta").textContent);
+  const antesCopia = pedidos.length;
+  el("send").click(); await esperar(400);
+  ok("Email inválido não envia", pedidos.length === antesCopia && el("copia-err").classList.contains("show"));
+  escrever("copia-email", "cliente@exemplo.pt");
+  respostaServidor = { status: 200, corpo: { ok: true, cliente: true } };
+  el("send").click(); await esperar(500);
+  const dc = pedidos[pedidos.length - 1].dados;
+  ok("Envia o email, o assunto e o corpo do cliente", dc.get("cliente_email") === "cliente@exemplo.pt"
+     && dc.get("cliente_assunto") === "CATE · Recolha · 000161", dc.get("cliente_assunto"));
+  const cc = dc.get("cliente_corpo") || "";
+  ok("O corpo do cliente leva só o necessário", cc.includes("Serviço: 000161") && cc.includes("Momento: Recolha")
+     && !cc.includes("Registado por") && !cc.includes("Garantia") && !cc.includes("Omitido"), cc);
+  ok("O cliente leva as fotografias e a etiqueta do equipamento",
+     dc.getAll("cliente_fotos[]").length === 3 && dc.getAll("cliente_fotos[]").some((n) => n.includes("etiqueta_")), dc.getAll("cliente_fotos[]"));
+  ok("O ecrã final diz para onde seguiu a cópia", el("done-msg").textContent.includes("cliente@exemplo.pt"), el("done-msg").textContent);
+  await novo();
+  ok("Novo registo limpa a cópia", !el("copia-marca").checked && el("copia-email").value === "");
   ok("Novo registo mantém a loja e o código", el("codigo-envio").value === "segredo" && botao("lojas-escolha", "Porto").getAttribute("aria-pressed") === "true");
   ok("Novo registo repõe «Partilhar outra vez»", !el("retry").hidden);
   E("(CONFIG.ENVIO_URL = '', localStorage.removeItem('catefoto.loja'), localStorage.removeItem('catefoto.codigo'), desenharLojas(), 0)");
