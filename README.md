@@ -126,6 +126,32 @@ aceitar. Só aí a app mostra **Enviado**, sem «Partilhar outra vez» (duplicav
 - Mudar o endereço obriga a mudar também o `connect-src` da CSP; o `teste.html`
   falha se não coincidirem.
 
+### Cópia ao cliente
+
+Na **Recolha**, **Reparação**, **Entrega** e **Montagem** (marca `copiaCliente`),
+e só com envio direto, aparece o cartão **Enviar cópia ao cliente**. Marcado,
+pede o email do cliente, validado enquanto se escreve com a mesma regra do
+servidor (sem acentos nem espaços).
+
+A cópia é um email à parte, só com o que interessa ao cliente:
+
+    Assunto: CATE · Reparação · 005434
+
+    Serviço: 005434
+    Momento: Reparação no local do cliente
+    Data: 20/11/2026 16:42
+    Registado por: <nome do técnico>
+    Estado: Resolvido
+    Fotografias: 4 (em anexo)
+
+Leva as fotografias do equipamento, as etiquetas e a folha de serviço; não leva
+garantia, omissões, observações, motivo do estado, fatura, local nem
+emprestado. Vai no mesmo pedido que o registo da loja: o servidor reaproveita
+os ficheiros pelos nomes (`cliente_fotos[]`) e envia a cópia **depois** do email
+da loja. Se a cópia falhar (ou o email do cliente for recusado), a loja recebe o
+registo na mesma e a app diz «A cópia ao cliente não saiu». Pela partilha só
+sai o email da loja, e o ecrã final avisa que a cópia não seguiu.
+
 ### A partilha (caminho de recurso) não envia
 
 Uma página web não consegue enviar um email sozinha nem saber se ele chegou a
@@ -539,7 +565,8 @@ A app não tem base de dados e não guarda fotografias em lado nenhum: existem n
 memória do telemóvel até serem enviadas. O script de envio (`servidor/enviar.php`)
 também não as guarda: monta o email, entrega-o ao servidor de email da CATE e
 esquece-as. Só aceita pedidos da app publicada, com o código de envio, para as
-caixas das lojas do `config.php`, e limita os envios por IP e por hora.
+caixas das lojas do `config.php` (e, na cópia ao cliente, para o endereço
+escrito pelo técnico, validado), e limita os envios por IP e por hora.
 O único código de terceiros é o **OpenCV.js** do corte automático, carregado só
 quando é preciso, de um endereço fixo no jsDelivr e com verificação de
 integridade (SRI): se o ficheiro mudar, o browser recusa-o. A CSP só autoriza
