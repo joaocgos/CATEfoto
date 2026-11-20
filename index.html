@@ -619,7 +619,7 @@
       <div class="titulo">
         <h1>CATEfoto</h1>
         <!-- Versão: sobe a cada publicação, para se ver no telemóvel se já está a mais recente. -->
-        <p>Registo fotográfico de serviço · <span id="versao">v1.4</span></p>
+        <p>Registo fotográfico de serviço · <span id="versao">v1.5</span></p>
       </div>
     </div>
   </header>
@@ -845,7 +845,7 @@
         <input id="copia-email" type="email" inputmode="email" autocomplete="off"
                autocapitalize="off" spellcheck="false" maxlength="120"
                placeholder="Ex.: nome@exemplo.pt" aria-describedby="copia-err copia-hint">
-        <p class="err" role="alert" id="copia-err">Escreve o email do cliente (ex.: nome@exemplo.pt).</p>
+        <p class="err" role="alert" id="copia-err">Email inválido: sem acentos nem espaços (ex.: nome@exemplo.pt).</p>
         <p class="card-hint" id="copia-hint">Leva o número do serviço, o momento, a data, quem registou, o estado
           e as fotografias do equipamento, das etiquetas e da folha de serviço.</p>
       </div>
@@ -2705,7 +2705,8 @@ function actualizarCopia() {
   $("card-copia").hidden = !copiaDisponivel();
   $("campo-copia").hidden = !copiaPedida();
 }
-const emailValido = (t) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t);
+// A mesma regra que o servidor aceita: sem acentos nem espaços.
+const emailValido = (t) => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(t);
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Avisos
@@ -2775,7 +2776,7 @@ function validar(mostrar = true) {
       [numMal, "número do serviço"], [numOmMal, "motivo da omissão do número"], [cliMal, "nome do cliente"], [morMal, "morada"],
       [tecMal, "registado por"], [estMal, "estado do serviço"], [motMal, "motivo"],
       [detMal, "detalhe do motivo"], [preMal, "o que o cliente pretende"],
-      [fatMal, "fatura"], [empEtqMal, "etiqueta do emprestado"],
+      [fatMal, estado.dispensas.fatura.marcada ? "motivo da omissão da fatura" : "fatura"], [empEtqMal, "etiqueta do emprestado"],
       [empFotMal, "fotografias do emprestado"],
       // Diz que fotografias faltam, não só «fotografias».
       [faltaEtq, varios ? `etiqueta do equipamento ${etq}` : "etiqueta"],
@@ -3233,6 +3234,8 @@ function reserva(ficheiros, assunto, corpo) {
 }
 
 function concluir(titulo, mensagem, enviado = false) {
+  // Pela partilha só sai um email, o da loja: a cópia marcada não segue.
+  if (!enviado && copiaPedida()) mensagem += " A cópia ao cliente não segue pela partilha: envia-a pela loja.";
   // Só o servidor confirma um envio: aí não há «outra vez» (duplicava o email).
   estado.enviado = enviado;
   $("retry").hidden = enviado;
@@ -3443,8 +3446,14 @@ $("copia-marca").addEventListener("change", (e) => {
   if (e.target.checked) $("copia-email").focus({ preventScroll: true });
   else marcar("copia-email", "copia-err", false);
 });
+// Valida enquanto se escreve: o erro sai logo que fica certo, e aparece ao
+// sair do campo (não a cada tecla, a meio de escrever).
 $("copia-email").addEventListener("input", (e) => {
   if (emailValido(e.target.value.trim())) marcar("copia-email", "copia-err", false);
+});
+$("copia-email").addEventListener("change", (e) => {
+  const v = e.target.value.trim();
+  marcar("copia-email", "copia-err", v !== "" && !emailValido(v));
 });
 
 // A linha do rodapé leva ao cartão das lojas.

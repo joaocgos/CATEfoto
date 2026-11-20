@@ -474,6 +474,9 @@ async function correr() {
   const antesCopia = pedidos.length;
   el("send").click(); await esperar(400);
   ok("Email inválido não envia", pedidos.length === antesCopia && el("copia-err").classList.contains("show"));
+  escrever("copia-email", "joão@exemplo.pt");
+  E("actualizarBotaoEnviar()");
+  ok("Email com acentos também não serve", el("em-falta").textContent.includes("email do cliente"));
   escrever("copia-email", "cliente@exemplo.pt");
   respostaServidor = { status: 200, corpo: { ok: true, cliente: true } };
   el("send").click(); await esperar(500);

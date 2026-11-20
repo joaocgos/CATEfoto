@@ -83,9 +83,11 @@ for ($i = 0; $i < $n; $i++) {
 // ── Cópia ao cliente (opcional): endereço validado, só ficheiros já recebidos ──
 $clienteEmail = trim((string)($_POST['cliente_email'] ?? ''));
 $copia = null;
-if ($clienteEmail !== '') {
-    if (strlen($clienteEmail) > 120 || preg_match('/[\r\n,;]/', $clienteEmail)
-        || !filter_var($clienteEmail, FILTER_VALIDATE_EMAIL)) responder(400, 'cliente');
+// Um email do cliente inválido não trava o registo: a loja recebe-o na mesma
+// e a resposta diz que a cópia não saiu (cliente: false).
+$clienteMal = $clienteEmail !== '' && (strlen($clienteEmail) > 120
+    || preg_match('/[\r\n,;]/', $clienteEmail) || !filter_var($clienteEmail, FILTER_VALIDATE_EMAIL));
+if ($clienteEmail !== '' && !$clienteMal) {
     $cAssunto = trim(str_replace(["\r", "\n"], ' ', (string)($_POST['cliente_assunto'] ?? '')));
     $cCorpo = (string)($_POST['cliente_corpo'] ?? '');
     if ($cAssunto === '' || mb_strlen($cAssunto) > 200 || mb_strlen($cCorpo) > 5000) responder(400, 'texto');
@@ -132,8 +134,8 @@ $recentes[] = $agora;
 if (!$enviado) responder(502, 'mail');
 // A cópia só sai depois do email da loja; se falhar, o registo já seguiu e a
 // app avisa o técnico (cliente: false), sem pedir para reenviar tudo.
-if ($copia) {
-    $okCliente = enviarEmail($cfg, ...$copia);
+if ($copia || $clienteMal) {
+    $okCliente = $copia ? enviarEmail($cfg, ...$copia) : false;
     http_response_code(200);
     echo json_encode(['ok' => true, 'cliente' => $okCliente]);
     exit;
