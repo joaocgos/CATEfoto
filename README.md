@@ -87,7 +87,7 @@ dica do número do serviço, das etiquetas e da fatura diz quando se pode omitir
 4. Fotografar o **equipamento** — pela câmara ou escolhendo da galeria.
 5. **Enviar registo** → o registo segue pelo servidor da CATE para a caixa da
    loja do técnico, e aparece o ecrã **Enviado**. Sem rede ou se falhar:
-   «Sem rede? Partilhar pela app de email» (ver *Envio direto*).
+   «O envio falhou? Partilhar pela app de email» (ver *Envio direto*).
 
 O corpo leva o técnico, a data e a hora a que cada fotografia foi realmente
 tirada. O assunto vai no formato `000123 · RECOLHA · DOMESTICO` — ver
@@ -118,7 +118,7 @@ aceitar. Só aí a app mostra **Enviado**, sem «Partilhar outra vez» (duplicav
 - **O servidor decide o destino**: a app manda só a chave da loja; os endereços
   estão no `config.php` do servidor.
 - **Se falhar** (sem rede, código errado, registo grande demais, limite de envios),
-  a app diz porquê e leva à ligação «Sem rede? Partilhar pela app de email». Nada
+  a app diz porquê e leva à ligação «O envio falhou? Partilhar pela app de email». Nada
   se perde: as fotografias e os campos ficam até *Novo registo*. Nesse caminho a
   app copia o endereço da loja escolhida, para colar no «Para».
 - Instalação, código de acesso e limites: `servidor/LEIA-ME.md`. O `config.php`
