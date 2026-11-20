@@ -716,8 +716,8 @@
       </div>
 
       <!-- O número do serviço noutra entidade (marca, seguradora, parceiro), com
-           ou sem garantia. Os dois seguem a mesma regra (letras, algarismos e traços,
-           sem espaços); este nunca é obrigatório. -->
+           ou sem garantia. Letras, algarismos e . - / \, sem espaços; nunca é
+           obrigatório. -->
       <div class="field" id="campo-num-externo" hidden>
         <label class="lbl" for="num-externo">Número do serviço externo (opcional)</label>
         <input id="num-externo" type="text" autocomplete="off" autocapitalize="characters" maxlength="40"
@@ -3383,13 +3383,14 @@ $("logo").addEventListener("error", () => {
   document.querySelector(".marca").hidden = false;
 });
 
-// Números de serviço (interno e externo): letras maiúsculas sem acentos,
-// algarismos e traços, sem espaços. As minúsculas passam a maiúsculas. O interno entra nos nomes dos ficheiros, por isso tudo o
-// resto (espaços, acentos, barras) sai à medida que se escreve — o que também
-// limpa o que venha colado. Só se reescreve quando há o que tirar, para o
-// cursor não saltar para o fim a meio de uma correção.
+// Número do serviço externo: letras maiúsculas sem acentos, algarismos e
+// . - / \ (os formatos das marcas usam-nos), sem espaços. As minúsculas passam
+// a maiúsculas; o resto sai à medida que se escreve — o que também limpa o que
+// venha colado. Não entra nos nomes dos ficheiros, por isso as barras podem
+// ficar. Só se reescreve quando há o que tirar, para o cursor não saltar para
+// o fim a meio de uma correção.
 const limparNumero = (campo) => {
-  const limpo = campo.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  const limpo = campo.value.toUpperCase().replace(/[^A-Z0-9.\-\/\\]/g, "");
   if (limpo !== campo.value) campo.value = limpo;
 };
 

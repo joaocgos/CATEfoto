@@ -206,8 +206,9 @@ async function correr() {
   escrever("num", "000124"); escrever("tec", "Teste");
   ok("Aparece em garantia", !el("campo-num-externo").hidden);
   ok("O número de cima passa a «interno»", el("num-lbl").textContent.includes("interno"), el("num-lbl").textContent);
-  escrever("num-externo", "ab 12-34/");
-  ok("O externo segue a mesma regra: letras, algarismos e traços", el("num-externo").value === "AB12-34", el("num-externo").value);
+  escrever("num-externo", "ab 12.3/4\\5-é,");
+  ok("O externo aceita letras, algarismos e . - / \\, sem espaços", el("num-externo").value === "AB12.3/4\\5-", el("num-externo").value);
+  escrever("num-externo", "AB12-34");
   omitir("Etiquetas", "Sem etiqueta"); await juntar("Fotografias");
   p = await partilhar();
   ok("Sem fatura nem omissão, não parte", !p);

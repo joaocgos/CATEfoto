@@ -196,7 +196,7 @@ Nunca é obrigatório e não tem caixa de omissão.
 O **interno tem sempre 6 algarismos**, sem espaços nem letras, com os zeros do
 início (`123456` ou `000006`): o resto sai ao escrever e ao colar, e não passa dos 6.
 Mesmo onde é opcional, se for preenchido tem de ter os 6. O **externo** leva letras
-maiúsculas sem acentos, algarismos e traços, sem espaços.
+maiúsculas sem acentos, algarismos e `.` `-` `/` `\`, sem espaços.
 
 Enquanto falta algo obrigatório, o botão de envio fica cinzento e por baixo aparece
 **Falta: …**, que encolhe à medida que se preenche.
